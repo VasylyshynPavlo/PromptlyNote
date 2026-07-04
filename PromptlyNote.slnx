@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="PromptlyNote.Api/PromptlyNote.Api.csproj" />
+  <Project Path="PromptlyNote.Core/PromptlyNote.Core.csproj" />
+  <Project Path="PromptlyNote.Data/PromptlyNote.Data.csproj" />
+  <Project Path="PromptlyNote.Services/PromptlyNote.Services.csproj" />
+</Solution>

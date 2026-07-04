@@ -1,0 +1,6 @@
+@PromptlyNote.Api_HostAddress = http://localhost:5208
+
+GET {{PromptlyNote.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
