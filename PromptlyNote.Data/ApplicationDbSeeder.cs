@@ -28,7 +28,7 @@ namespace PromptlyNote.Data
             {
                 FullName = "Default User",
                 Email = "defaultuser@example.com",
-                PasswordHash = PasswordHesher.HashPassword(""),
+                PasswordHash = PasswordHesher.HashPassword("admin123"),
                 AvatarUrl = "https://i.pravatar.cc/150?u=defaultuser@example.com",
             };
             await context.Users.AddAsync(defaultUser);

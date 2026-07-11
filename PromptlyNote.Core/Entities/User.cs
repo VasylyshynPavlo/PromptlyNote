@@ -1,8 +1,7 @@
 ﻿namespace PromptlyNote.Core.Entities
 {
-    public class User
+    public class User : BaseEntity
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
         public string? AvatarUrl { get; set; } = null;
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
@@ -11,5 +10,7 @@
         public List<ToDoTask> Tasks { get; set; } = [];
         public List<Category> Categories { get; set; } = [];
         public List<TaskList> TaskLists { get; set; } = [];
+        public List<RefreshToken> RefreshTokens { get; set; } = [];
+        public GoogleCalendarConnection? GoogleCalendarConnection { get; set; } = null;
     }
 }

@@ -17,9 +17,12 @@ namespace PromptlyNote.Data.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     AvatarUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
+                    FullName = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(254)", maxLength: 254, nullable: false),
                     PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    GoogleAuth = table.Column<bool>(type: "bit", nullable: false)
+                    GoogleAuth = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -31,9 +34,12 @@ namespace PromptlyNote.Data.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     ColorHex = table.Column<string>(type: "nvarchar(9)", maxLength: 9, nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    Default = table.Column<bool>(type: "bit", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -51,11 +57,13 @@ namespace PromptlyNote.Data.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Icon = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    IconName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Default = table.Column<bool>(type: "bit", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -69,36 +77,37 @@ namespace PromptlyNote.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Tasks",
+                name: "ToDoTasks",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     Note = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     DueDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     IsCompleted = table.Column<bool>(type: "bit", nullable: false),
-                    CategoryId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CategoryId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    TaskListId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    TaskListId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Tasks", x => x.Id);
+                    table.PrimaryKey("PK_ToDoTasks", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Tasks_Categories_CategoryId",
+                        name: "FK_ToDoTasks_Categories_CategoryId",
                         column: x => x.CategoryId,
                         principalTable: "Categories",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_Tasks_TaskLists_TaskListId",
+                        name: "FK_ToDoTasks_TaskLists_TaskListId",
                         column: x => x.TaskListId,
                         principalTable: "TaskLists",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Tasks_Users_UserId",
+                        name: "FK_ToDoTasks_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
@@ -109,19 +118,20 @@ namespace PromptlyNote.Data.Migrations
                 name: "SubTasks",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     IsCompleted = table.Column<bool>(type: "bit", nullable: false),
-                    ToDoTaskId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    ToDoTaskId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_SubTasks", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_SubTasks_Tasks_ToDoTaskId",
+                        name: "FK_SubTasks_ToDoTasks_ToDoTaskId",
                         column: x => x.ToDoTaskId,
-                        principalTable: "Tasks",
+                        principalTable: "ToDoTasks",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -142,18 +152,18 @@ namespace PromptlyNote.Data.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Tasks_CategoryId",
-                table: "Tasks",
+                name: "IX_ToDoTasks_CategoryId",
+                table: "ToDoTasks",
                 column: "CategoryId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Tasks_TaskListId",
-                table: "Tasks",
+                name: "IX_ToDoTasks_TaskListId",
+                table: "ToDoTasks",
                 column: "TaskListId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Tasks_UserId",
-                table: "Tasks",
+                name: "IX_ToDoTasks_UserId",
+                table: "ToDoTasks",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
@@ -170,7 +180,7 @@ namespace PromptlyNote.Data.Migrations
                 name: "SubTasks");
 
             migrationBuilder.DropTable(
-                name: "Tasks");
+                name: "ToDoTasks");
 
             migrationBuilder.DropTable(
                 name: "Categories");

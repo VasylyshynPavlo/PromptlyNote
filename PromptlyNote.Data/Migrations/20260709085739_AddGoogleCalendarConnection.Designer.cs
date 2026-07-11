@@ -12,8 +12,8 @@ using PromptlyNote.Data;
 namespace PromptlyNote.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260703174117_ChangeField")]
-    partial class ChangeField
+    [Migration("20260709085739_AddGoogleCalendarConnection")]
+    partial class AddGoogleCalendarConnection
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -36,6 +36,9 @@ namespace PromptlyNote.Data.Migrations
                         .HasMaxLength(9)
                         .HasColumnType("nvarchar(9)");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool>("Default")
                         .HasColumnType("bit");
 
@@ -43,6 +46,9 @@ namespace PromptlyNote.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
@@ -54,18 +60,87 @@ namespace PromptlyNote.Data.Migrations
                     b.ToTable("Categories");
                 });
 
+            modelBuilder.Entity("PromptlyNote.Core.Entities.GoogleCalendarConnection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EncryptedRefreshToken")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Scopes")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("GoogleCalendarConnections");
+                });
+
+            modelBuilder.Entity("PromptlyNote.Core.Entities.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
+                });
+
             modelBuilder.Entity("PromptlyNote.Core.Entities.TaskList", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool>("Default")
                         .HasColumnType("bit");
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("IconName")
                         .IsRequired()
@@ -75,6 +150,9 @@ namespace PromptlyNote.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
@@ -92,7 +170,7 @@ namespace PromptlyNote.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("CategoryId")
+                    b.Property<Guid?>("CategoryId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
@@ -117,6 +195,9 @@ namespace PromptlyNote.Data.Migrations
                     b.Property<Guid>("TaskListId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
@@ -128,7 +209,7 @@ namespace PromptlyNote.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Tasks");
+                    b.ToTable("ToDoTasks");
                 });
 
             modelBuilder.Entity("PromptlyNote.Core.Entities.User", b =>
@@ -140,10 +221,13 @@ namespace PromptlyNote.Data.Migrations
                     b.Property<string>("AvatarUrl")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasMaxLength(320)
-                        .HasColumnType("nvarchar(320)");
+                        .HasMaxLength(254)
+                        .HasColumnType("nvarchar(254)");
 
                     b.Property<string>("FullName")
                         .IsRequired()
@@ -155,6 +239,9 @@ namespace PromptlyNote.Data.Migrations
 
                     b.Property<string>("PasswordHash")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
@@ -168,6 +255,28 @@ namespace PromptlyNote.Data.Migrations
                 {
                     b.HasOne("PromptlyNote.Core.Entities.User", "User")
                         .WithMany("Categories")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("PromptlyNote.Core.Entities.GoogleCalendarConnection", b =>
+                {
+                    b.HasOne("PromptlyNote.Core.Entities.User", "User")
+                        .WithOne("GoogleCalendarConnection")
+                        .HasForeignKey("PromptlyNote.Core.Entities.GoogleCalendarConnection", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("PromptlyNote.Core.Entities.RefreshToken", b =>
+                {
+                    b.HasOne("PromptlyNote.Core.Entities.User", "User")
+                        .WithMany("RefreshTokens")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -191,8 +300,7 @@ namespace PromptlyNote.Data.Migrations
                     b.HasOne("PromptlyNote.Core.Entities.Category", "Category")
                         .WithMany("Tasks")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("PromptlyNote.Core.Entities.TaskList", "TaskList")
                         .WithMany("Tasks")
@@ -208,11 +316,12 @@ namespace PromptlyNote.Data.Migrations
 
                     b.OwnsMany("PromptlyNote.Core.Entities.SubTask", "SubTasks", b1 =>
                         {
-                            b1.Property<int>("Id")
+                            b1.Property<Guid>("Id")
                                 .ValueGeneratedOnAdd()
-                                .HasColumnType("int");
+                                .HasColumnType("uniqueidentifier");
 
-                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
+                            b1.Property<DateTime>("CreatedAt")
+                                .HasColumnType("datetime2");
 
                             b1.Property<bool>("IsCompleted")
                                 .HasColumnType("bit");
@@ -224,6 +333,9 @@ namespace PromptlyNote.Data.Migrations
 
                             b1.Property<Guid>("ToDoTaskId")
                                 .HasColumnType("uniqueidentifier");
+
+                            b1.Property<DateTime>("UpdatedAt")
+                                .HasColumnType("datetime2");
 
                             b1.HasKey("Id");
 
@@ -257,6 +369,10 @@ namespace PromptlyNote.Data.Migrations
             modelBuilder.Entity("PromptlyNote.Core.Entities.User", b =>
                 {
                     b.Navigation("Categories");
+
+                    b.Navigation("GoogleCalendarConnection");
+
+                    b.Navigation("RefreshTokens");
 
                     b.Navigation("TaskLists");
 

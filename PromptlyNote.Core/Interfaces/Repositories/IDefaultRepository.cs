@@ -10,12 +10,14 @@ namespace PromptlyNote.Core.Interfaces.Repositories
 {
     public interface IDefaultRepository<T>
     {
-        Task AddAsync(T item);
-        Task AddRangeAsync(List<T> items);
+        Task AddAsync(T item, CancellationToken cancellationToken = default);
+        Task AddRangeAsync(IEnumerable<T> items, CancellationToken cancellationToken = default);
         Task UpdateAsync(T item);
-        Task<T?> GetAsync(Guid id);
-        Task<PagedResult<T>> ListAsync(Expression<Func<T, bool>> predicate, int page = PaginationConfiguration.PageStart, int pageSize = PaginationConfiguration.PageSize, Expression<Func<T, object>>? orderBy = null, params Expression<Func<T, object>>[] includes);
-        Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate);
-        Task DeleteAsync(Guid id);
+        Task<T?> FindAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default, params Expression<Func<T, object>>[] includes);
+        Task<T2?> FindAsync<T2>(Expression<Func<T, bool>> predicate, Expression<Func<T, T2>> selector, CancellationToken cancellationToken = default, params Expression<Func<T, object>>[] includes);
+        Task<PagedResult<T>> ListAsync(Expression<Func<T, bool>> predicate, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, Expression<Func<T, object>>? orderBy = null, CancellationToken cancellationToken = default, params Expression<Func<T, object>>[] includes);
+        Task<PagedResult<T2>> ListAsync<T2>(Expression<Func<T, bool>> predicate, Expression<Func<T, T2>> selector, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, Expression<Func<T, object>>? orderBy = null, CancellationToken cancellationToken = default, params Expression<Func<T, object>>[] includes);
+        Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);
+        Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
     }
 }

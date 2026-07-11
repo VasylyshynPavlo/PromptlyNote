@@ -6,7 +6,7 @@
 
         public static string HashPassword(string password)
         {
-            return BCrypt.Net.BCrypt.HashPassword(password);
+            return BCrypt.Net.BCrypt.HashPassword(password, workFactor: WorkFactor);
         }
         public static bool Verify(string password, string passwordHash)
         {

@@ -2,13 +2,15 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
-using PromptlyNote.Api;
+using PromptlyNote.Api.Middlewares;
 using PromptlyNote.Core.Interfaces;
 using PromptlyNote.Core.Interfaces.Repositories;
 using PromptlyNote.Core.Interfaces.Services;
 using PromptlyNote.Data;
 using PromptlyNote.Data.Repositories;
+using PromptlyNote.Services.Mapping;
 using PromptlyNote.Services.Services;
+using Scalar.AspNetCore;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,29 +18,38 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 // Services
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ITaskListService, TaskListService>();
+builder.Services.AddScoped<IToDoTaskService, ToDoTaskService>();
+builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IGoogleTokenProtector, GoogleTokenProtector>();
+builder.Services.AddScoped<IGoogleCalendarService, GoogleCalendarService>();
 
 // Repositories
-builder.Services.AddScoped<ITaskRepository, TaskRepository>();
+builder.Services.AddScoped<IToDoTaskRepository, ToDoTaskRepository>();
 builder.Services.AddScoped<ITaskListRepository, TaskListRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<IGoogleCalendarConnectionRepository, GoogleCalendarConnectionRepository>();
 
 // Database settings
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 var connectionString = builder.Configuration.GetConnectionString("DevelopmentConnection")
     ?? throw new InvalidOperationException("Database connection string is missing in appsettings.json");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
-    options.UseSqlServer(connectionString);
+    options.UseSqlServer(connectionString).EnableSensitiveDataLogging().LogTo(Console.WriteLine, LogLevel.Information);
 });
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins("http://localhost:4200")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -46,8 +57,12 @@ builder.Services.AddCors(options =>
 });
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["Secret"]
-    ?? throw new InvalidOperationException("JWT secret key is missing in appsettings.json");
+var secretKey = jwtSettings["Secret"];
+if (string.IsNullOrWhiteSpace(secretKey))
+{
+    throw new InvalidOperationException(
+        "JWT secret is missing. Set 'JwtSettings:Secret' via user-secrets (dev) or environment variables.");
+}
 
 builder.Services.AddAuthentication(options =>
 {
@@ -81,6 +96,17 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddMaps(typeof(UserProfile).Assembly);
+    cfg.AddMaps(typeof(CategoryProfile).Assembly);
+    cfg.AddMaps(typeof(TaskListProfile).Assembly);
+    cfg.AddMaps(typeof(ToDoTaskProfile).Assembly);
+    cfg.AddMaps(typeof(SubTaskProfile).Assembly);
+});
+
+builder.Services.AddDataProtection();
+
 builder.Services.AddAuthorization();
 
 builder.Services.AddOpenApi();
@@ -109,15 +135,13 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/openapi/v1.json", "OpenAPI v1");
-    });
+    app.MapScalarApiReference();
 }
 
 app.UseHttpsRedirection();
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseCors("FrontendPolicy");
+app.UseMiddleware<AuthMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

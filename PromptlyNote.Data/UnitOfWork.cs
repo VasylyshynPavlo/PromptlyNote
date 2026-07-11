@@ -11,23 +11,23 @@ namespace PromptlyNote.Data
         private readonly ApplicationDbContext _context = context;
         private IDbContextTransaction? _transaction;
 
-        public async Task BeginTransactionAsync()
+        public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
         {
             if (_transaction is not null)
                 throw new InvalidOperationException("A transaction is already in progress.");
 
-            _transaction = await _context.Database.BeginTransactionAsync();
+            _transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
         }
 
-        public async Task CommitAsync()
+        public async Task CommitAsync(CancellationToken cancellationToken = default)
         {
             if (_transaction is null)
                 throw new InvalidOperationException("No active transaction to commit.");
 
             try
             {
-                await _context.SaveChangesAsync();
-                await _transaction.CommitAsync();
+                await _context.SaveChangesAsync(cancellationToken);
+                await _transaction.CommitAsync(cancellationToken);
             }
             finally
             {
@@ -36,14 +36,14 @@ namespace PromptlyNote.Data
             }
         }
 
-        public async Task RollbackAsync()
+        public async Task RollbackAsync(CancellationToken cancellationToken = default)
         {
             if (_transaction is null)
                 return;
 
             try
             {
-                await _transaction.RollbackAsync();
+                await _transaction.RollbackAsync(cancellationToken);
             }
             finally
             {
@@ -52,6 +52,6 @@ namespace PromptlyNote.Data
             }
         }
 
-        public Task<int> SaveChangesAsync() => _context.SaveChangesAsync();
+        public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) => _context.SaveChangesAsync(cancellationToken);
     }
 }

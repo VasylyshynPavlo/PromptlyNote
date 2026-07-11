@@ -6,9 +6,11 @@ namespace PromptlyNote.Data
     public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
     {
         public DbSet<User> Users => Set<User>();
-        public DbSet<ToDoTask> Tasks => Set<ToDoTask>();
+        public DbSet<ToDoTask> ToDoTasks => Set<ToDoTask>();
         public DbSet<Category> Categories => Set<Category>();
         public DbSet<TaskList> TaskLists => Set<TaskList>();
+        public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+        public DbSet<GoogleCalendarConnection> GoogleCalendarConnections => Set<GoogleCalendarConnection>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -24,7 +26,7 @@ namespace PromptlyNote.Data
 
                 entity.Property(u => u.Email)
                     .IsRequired()
-                    .HasMaxLength(320);
+                    .HasMaxLength(254);
 
                 entity.Property(u => u.FullName)
                     .IsRequired()
@@ -56,6 +58,9 @@ namespace PromptlyNote.Data
 
                 entity.Property(tl => tl.Name)
                     .IsRequired()
+                    .HasMaxLength(255);
+
+                entity.Property(tl => tl.Description)
                     .HasMaxLength(255);
 
                 entity.HasOne(tl => tl.User)
@@ -96,11 +101,52 @@ namespace PromptlyNote.Data
                     sb.ToTable("SubTasks");
                     sb.WithOwner().HasForeignKey("ToDoTaskId");
                     sb.HasKey(s => s.Id);
+                    sb.Property(s => s.Id).ValueGeneratedOnAdd();
 
                     sb.Property(s => s.Name)
                       .IsRequired()
                       .HasMaxLength(200);
                 });
+            });
+
+            // RefreshToken
+            modelBuilder.Entity<RefreshToken>(entity =>
+            {
+                entity.HasKey(rt => rt.Id);
+
+                entity.Property(rt => rt.Token)
+                    .IsRequired()
+                    .HasMaxLength(200);
+
+                entity.Property(rt => rt.ReplacedByToken)
+                    .HasMaxLength(200);
+
+                entity.HasIndex(rt => rt.Token)
+                    .IsUnique();
+
+                entity.HasIndex(rt => rt.SessionId);
+
+                entity.HasOne(rt => rt.User)
+                    .WithMany(u => u.RefreshTokens)
+                    .HasForeignKey(rt => rt.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // GoogleCalendarConnection
+            modelBuilder.Entity<GoogleCalendarConnection>(entity =>
+            {
+                entity.HasKey(gc => gc.Id);
+                entity.Property(gc => gc.EncryptedRefreshToken)
+                    .IsRequired();
+
+                entity.Property(gc => gc.Scopes)
+                    .IsRequired()
+                    .HasMaxLength(500);
+
+                entity.HasOne(gc => gc.User)
+                    .WithOne(u => u.GoogleCalendarConnection)
+                    .HasForeignKey<GoogleCalendarConnection>(gc => gc.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

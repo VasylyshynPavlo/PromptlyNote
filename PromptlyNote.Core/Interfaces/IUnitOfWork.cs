@@ -6,9 +6,9 @@ namespace PromptlyNote.Core.Interfaces
 {
     public interface IUnitOfWork
     {
-        Task BeginTransactionAsync();
-        Task CommitAsync();
-        Task RollbackAsync();
-        Task<int> SaveChangesAsync();
+        Task BeginTransactionAsync(CancellationToken cancellationToken = default);
+        Task CommitAsync(CancellationToken cancellationToken = default);
+        Task RollbackAsync(CancellationToken cancellationToken = default);
+        Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 }
