@@ -1,8 +1,4 @@
-﻿using PromptlyNote.Core.Entities;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Text;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace PromptlyNote.Core.DTOs.Forms.Create
 {
@@ -23,6 +19,13 @@ namespace PromptlyNote.Core.DTOs.Forms.Create
 
         [Required(ErrorMessage = "Task list ID is required.")]
         public string TaskListId { get; set; } = string.Empty;
+
+        [Range(0, 40320, ErrorMessage = "RemindBeforeMinutes must be between 0 and 40320.")]
+        public int? RemindBeforeMinutes { get; set; }
+
+        [Required(ErrorMessage = "SyncToGoogleCalendar is required.")]
+        public bool SyncToGoogleCalendar { get; set; } = false;
+
         public List<CreateSubTaskForm> SubTasks { get; set; } = [];
     }
 }

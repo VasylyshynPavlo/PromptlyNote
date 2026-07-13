@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PromptlyNote.Core.Interfaces.Services
+﻿namespace PromptlyNote.Core.Interfaces.Services
 {
     public interface IGoogleTokenProtector
     {

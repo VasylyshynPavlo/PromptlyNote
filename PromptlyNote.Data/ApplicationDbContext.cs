@@ -9,7 +9,6 @@ namespace PromptlyNote.Data
         public DbSet<ToDoTask> ToDoTasks => Set<ToDoTask>();
         public DbSet<Category> Categories => Set<Category>();
         public DbSet<TaskList> TaskLists => Set<TaskList>();
-        public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<GoogleCalendarConnection> GoogleCalendarConnections => Set<GoogleCalendarConnection>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -107,29 +106,6 @@ namespace PromptlyNote.Data
                       .IsRequired()
                       .HasMaxLength(200);
                 });
-            });
-
-            // RefreshToken
-            modelBuilder.Entity<RefreshToken>(entity =>
-            {
-                entity.HasKey(rt => rt.Id);
-
-                entity.Property(rt => rt.Token)
-                    .IsRequired()
-                    .HasMaxLength(200);
-
-                entity.Property(rt => rt.ReplacedByToken)
-                    .HasMaxLength(200);
-
-                entity.HasIndex(rt => rt.Token)
-                    .IsUnique();
-
-                entity.HasIndex(rt => rt.SessionId);
-
-                entity.HasOne(rt => rt.User)
-                    .WithMany(u => u.RefreshTokens)
-                    .HasForeignKey(rt => rt.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             // GoogleCalendarConnection

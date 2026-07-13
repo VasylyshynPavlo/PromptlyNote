@@ -1,8 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.Storage;
 using PromptlyNote.Core.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace PromptlyNote.Data
 {

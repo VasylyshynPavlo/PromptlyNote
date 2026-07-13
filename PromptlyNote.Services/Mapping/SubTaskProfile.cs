@@ -4,9 +4,6 @@ using PromptlyNote.Core.DTOs.Forms.Create;
 using PromptlyNote.Core.DTOs.Forms.Update;
 using PromptlyNote.Core.Entities;
 using PromptlyNote.Core.Utils;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace PromptlyNote.Services.Mapping
 {

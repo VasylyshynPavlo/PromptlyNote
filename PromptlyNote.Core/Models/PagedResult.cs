@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace PromptlyNote.Core.Models
+﻿namespace PromptlyNote.Core.Models
 {
     public class PagedResult<T>
     {

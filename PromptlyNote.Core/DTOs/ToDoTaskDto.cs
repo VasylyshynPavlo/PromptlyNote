@@ -1,8 +1,4 @@
 ﻿using PromptlyNote.Core.DTOs.LightDTOs;
-using PromptlyNote.Core.Entities;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace PromptlyNote.Core.DTOs
 {
@@ -20,5 +16,14 @@ namespace PromptlyNote.Core.DTOs
         public string TaskListId { get; set; } = string.Empty;
         public TaskListLightDto? TaskList { get; set; }
         public List<SubTaskDto> SubTasks { get; set; } = [];
+
+        public int? RemindBeforeMinutes { get; set; }
+
+        // Намір користувача синхронізувати таску з календарем.
+        public bool SyncToGoogleCalendar { get; set; } = false;
+
+        // Чи реально зараз має бути подія в календарі (завершені туди не потрапляють).
+        // Саме це поле фронт має показувати як "в календарі".
+        public bool IsInGoogleCalendar => SyncToGoogleCalendar && !IsCompleted;
     }
 }

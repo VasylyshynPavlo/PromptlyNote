@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PromptlyNote.Core.DTOs.LightDTOs
+﻿namespace PromptlyNote.Core.DTOs.LightDTOs
 {
     public class CategoryLightDto : BaseDto
     {

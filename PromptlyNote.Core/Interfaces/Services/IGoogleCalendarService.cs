@@ -1,5 +1,4 @@
-using PromptlyNote.Core.DTOs;
-using PromptlyNote.Core.DTOs.Forms.Create;
+using PromptlyNote.Core.DTOs.LightDTOs;
 
 namespace PromptlyNote.Core.Interfaces.Services
 {
@@ -9,10 +8,8 @@ namespace PromptlyNote.Core.Interfaces.Services
 
         Task HandleConnectCallbackAsync(string code, string state, CancellationToken cancellationToken = default);
 
-        Task<string> CreateEventAsync(string userId, CreateCalendarEventForm form, CancellationToken cancellationToken = default);
+        Task<string> CreateEventAsync(string userId, ToDoTaskLightDto dto, CancellationToken cancellationToken = default);
 
-        Task<List<CalendarEventDto>> ListEventsAsync(string userId, CancellationToken cancellationToken = default);
-
-        Task DeleteEventAsync(string userId, string eventId, CancellationToken cancellationToken = default);
+        Task DeleteEventAsync(string userId, string taskId, CancellationToken cancellationToken = default);
     }
 }

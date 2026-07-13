@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PromptlyNote.Core.Enums
+﻿namespace PromptlyNote.Core.Enums
 {
     public enum UserSortBy
     {

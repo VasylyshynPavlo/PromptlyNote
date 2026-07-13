@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
 using PromptlyNote.Api.Middlewares;
 using PromptlyNote.Core.Interfaces;
 using PromptlyNote.Core.Interfaces.Repositories;
@@ -32,7 +31,6 @@ builder.Services.AddScoped<IToDoTaskRepository, ToDoTaskRepository>();
 builder.Services.AddScoped<ITaskListRepository, TaskListRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IGoogleCalendarConnectionRepository, GoogleCalendarConnectionRepository>();
 
 // Database settings
@@ -42,7 +40,7 @@ var connectionString = builder.Configuration.GetConnectionString("DevelopmentCon
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
-    options.UseSqlServer(connectionString).EnableSensitiveDataLogging().LogTo(Console.WriteLine, LogLevel.Information);
+    options.UseSqlServer(connectionString);
 });
 
 builder.Services.AddCors(options =>
@@ -141,7 +139,6 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseCors("FrontendPolicy");
-app.UseMiddleware<AuthMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

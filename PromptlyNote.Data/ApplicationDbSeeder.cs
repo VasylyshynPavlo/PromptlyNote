@@ -1,12 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PromptlyNote.Core.Constants;
 using PromptlyNote.Core.Entities;
-using PromptlyNote.Core.Models;
 using PromptlyNote.Core.Utils;
-using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Text;
 
 namespace PromptlyNote.Data
 {
@@ -29,7 +24,6 @@ namespace PromptlyNote.Data
                 FullName = "Default User",
                 Email = "defaultuser@example.com",
                 PasswordHash = PasswordHesher.HashPassword("admin123"),
-                AvatarUrl = "https://i.pravatar.cc/150?u=defaultuser@example.com",
             };
             await context.Users.AddAsync(defaultUser);
             await context.SaveChangesAsync();

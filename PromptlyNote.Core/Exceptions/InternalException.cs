@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PromptlyNote.Core.Exceptions
+﻿namespace PromptlyNote.Core.Exceptions
 {
     public class InternalException : ApiException
     {

@@ -1,7 +1,4 @@
 ﻿using PromptlyNote.Core.Constants;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace PromptlyNote.Core.Utils
 {

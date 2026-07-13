@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PromptlyNote.Core.Constants;
 using PromptlyNote.Core.DTOs.Forms.Create;
@@ -24,7 +23,7 @@ namespace PromptlyNote.Api.Controllers
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                       ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
+            if (userId is null)
             {
                 return Unauthorized();
             }
@@ -37,7 +36,7 @@ namespace PromptlyNote.Api.Controllers
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                       ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
+            if (userId is null)
             {
                 return Unauthorized();
             }
@@ -51,7 +50,7 @@ namespace PromptlyNote.Api.Controllers
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                       ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
+            if (userId is null)
             {
                 return Unauthorized();
             }
@@ -64,7 +63,7 @@ namespace PromptlyNote.Api.Controllers
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                       ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
+            if (userId is null)
             {
                 return Unauthorized();
             }
@@ -78,7 +77,7 @@ namespace PromptlyNote.Api.Controllers
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                       ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
+            if (userId is null)
             {
                 return Unauthorized();
             }

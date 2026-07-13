@@ -1,10 +1,6 @@
 ﻿using PromptlyNote.Core.Constants;
-using PromptlyNote.Core.Entities;
 using PromptlyNote.Core.Models;
-using System;
-using System.Collections.Generic;
 using System.Linq.Expressions;
-using System.Text;
 
 namespace PromptlyNote.Core.Interfaces.Repositories
 {

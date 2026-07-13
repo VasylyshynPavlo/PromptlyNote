@@ -1,8 +1,4 @@
 ﻿using PromptlyNote.Core.DTOs.LightDTOs;
-using PromptlyNote.Core.Entities;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace PromptlyNote.Core.DTOs
 {

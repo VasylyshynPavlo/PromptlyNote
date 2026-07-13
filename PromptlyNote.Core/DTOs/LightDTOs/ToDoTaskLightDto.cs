@@ -1,7 +1,4 @@
 ﻿using PromptlyNote.Core.Entities;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace PromptlyNote.Core.DTOs.LightDTOs
 {
@@ -15,5 +12,8 @@ namespace PromptlyNote.Core.DTOs.LightDTOs
         public string UserId { get; set; } = string.Empty;
         public string TaskListId { get; set; } = string.Empty;
         public List<SubTask> SubTasks { get; set; } = [];
+
+        public int? RemindBeforeMinutes { get; set; }
+        public bool SyncToGoogleCalendar { get; set; } = false;
     }
 }

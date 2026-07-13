@@ -1,5 +1,4 @@
 ﻿using PromptlyNote.Core.Entities;
-using System.Linq.Expressions;
 
 namespace PromptlyNote.Core.Interfaces.Repositories
 {

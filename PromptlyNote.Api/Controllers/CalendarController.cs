@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PromptlyNote.Core.DTOs.Forms.Create;
 using PromptlyNote.Core.Exceptions;
 using PromptlyNote.Core.Interfaces.Services;
 using System.IdentityModel.Tokens.Jwt;
@@ -22,7 +21,7 @@ namespace PromptlyNote.Api.Controllers
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                       ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
+            if (userId is null)
             {
                 return Unauthorized();
             }
@@ -51,47 +50,6 @@ namespace PromptlyNote.Api.Controllers
             }
 
             return Redirect($"{FrontendResultUrl}?calendar=connected");
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> CreateEvent([FromBody] CreateCalendarEventForm form, CancellationToken cancellationToken = default)
-        {
-            var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-                      ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
-            {
-                return Unauthorized();
-            }
-
-            var eventId = await _googleCalendarService.CreateEventAsync(userId, form, cancellationToken);
-            return Ok(new { eventId });
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> ListEvents(CancellationToken cancellationToken = default)
-        {
-            var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-                      ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
-            {
-                return Unauthorized();
-            }
-
-            return Ok(await _googleCalendarService.ListEventsAsync(userId, cancellationToken));
-        }
-
-        [HttpDelete]
-        public async Task<IActionResult> DeleteEvent(string eventId, CancellationToken cancellationToken = default)
-        {
-            var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-                      ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
-            {
-                return Unauthorized();
-            }
-
-            await _googleCalendarService.DeleteEventAsync(userId, eventId, cancellationToken);
-            return NoContent();
         }
     }
 }

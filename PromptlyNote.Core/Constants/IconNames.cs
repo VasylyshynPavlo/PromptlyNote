@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PromptlyNote.Core.Constants
+﻿namespace PromptlyNote.Core.Constants
 {
     public static class IconNames
     {

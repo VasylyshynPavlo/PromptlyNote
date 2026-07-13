@@ -47,7 +47,7 @@ namespace PromptlyNote.Services.Services
             if (await _userRepository.ExistsAsync(u => u.Email == form.Email, cancellationToken))
                 throw new ConflictException(ExceptionMessages.ConflictFieldsName("user", "email"));
 
-            if (form.Password != null && viaGoogle)
+            if (form.Password is not null && viaGoogle)
                 throw new ArgumentException("Password should not be provided when registering via Google.", nameof(form));
 
             await _unitOfWork.BeginTransactionAsync(cancellationToken);
@@ -55,9 +55,8 @@ namespace PromptlyNote.Services.Services
             {
                 User newUser = new()
                 {
-                    AvatarUrl = form.AvatarUrl,
                     FullName = form.FullName,
-                    PasswordHash = form.Password != null ? BCrypt.Net.BCrypt.HashPassword(form.Password) : null,
+                    PasswordHash = form.Password is not null ? BCrypt.Net.BCrypt.HashPassword(form.Password) : null,
                     GoogleAuth = viaGoogle,
                     Email = form.Email
                 };

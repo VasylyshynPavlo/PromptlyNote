@@ -3,6 +3,7 @@ using PromptlyNote.Core.Constants;
 using PromptlyNote.Core.DTOs;
 using PromptlyNote.Core.DTOs.Forms.Create;
 using PromptlyNote.Core.DTOs.Forms.Update;
+using PromptlyNote.Core.DTOs.LightDTOs;
 using PromptlyNote.Core.Entities;
 using PromptlyNote.Core.Enums;
 using PromptlyNote.Core.Exceptions;
@@ -21,12 +22,14 @@ namespace PromptlyNote.Services.Services
         IUserRepository userRepository,
         ITaskListRepository taskListRepository,
         IUnitOfWork unitOfWork,
-        IMapper mapper) : IToDoTaskService
+        IMapper mapper,
+        IGoogleCalendarService googleCalendarService) : IToDoTaskService
     {
         private readonly IToDoTaskRepository _taskRepository = taskRepository;
         private readonly ICategoryRepository _categoryRepository = categoryRepository;
         private readonly IUserRepository _userRepository = userRepository;
         private readonly ITaskListRepository _taskListRepository = taskListRepository;
+        private readonly IGoogleCalendarService _googleCalendarService = googleCalendarService;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
 
@@ -69,10 +72,27 @@ namespace PromptlyNote.Services.Services
                 TaskListId = taskListGuid,
                 UserId = userGuid,
                 SubTasks = _mapper.Map<List<SubTask>>(form.SubTasks),
+                RemindBeforeMinutes = form.RemindBeforeMinutes
             };
 
-            await _taskRepository.AddAsync(task, cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            if (form.SyncToGoogleCalendar && form.DueDate is null)
+                throw new ArgumentException("Task does not have a due date to sync to Google Calendar.");
+
+            await _unitOfWork.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                await _taskRepository.AddAsync(task, cancellationToken);
+
+                if (form.SyncToGoogleCalendar)
+                    await _googleCalendarService.CreateEventAsync(userId, _mapper.Map<ToDoTaskLightDto>(task), cancellationToken);
+
+                await _unitOfWork.CommitAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackAsync(CancellationToken.None);
+                throw new InternalException("An error occurred while creating the task.", ex);
+            }
         }
 
         public async Task UpdateAsync(string taskId, string userId, UpdateToDoTaskForm form, CancellationToken cancellationToken = default)
@@ -90,6 +110,12 @@ namespace PromptlyNote.Services.Services
             if (task.UserId != userGuid)
                 throw new ForbiddenException(ExceptionMessages.NotOwner("task"));
 
+            var wasInCalendar = task.SyncToGoogleCalendar && !task.IsCompleted;
+            var shouldBeInCalendar = form.SyncToGoogleCalendar && !form.IsCompleted;
+
+            if (shouldBeInCalendar && form.DueDate is null)
+                throw new ArgumentException("Task does not have a due date to sync to Google Calendar.");
+
             task.Name = form.Name;
             task.Note = form.Note;
             task.DueDate = form.DueDate;
@@ -97,9 +123,33 @@ namespace PromptlyNote.Services.Services
             task.TaskListId = taskListGuid;
             task.IsCompleted = form.IsCompleted;
             task.SubTasks = _mapper.Map<List<SubTask>>(form.SubTasks);
+            task.RemindBeforeMinutes = form.RemindBeforeMinutes;
+            task.SyncToGoogleCalendar = form.SyncToGoogleCalendar;
 
-            await _taskRepository.UpdateAsync(task);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _unitOfWork.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                await _taskRepository.UpdateAsync(task);
+
+                if (shouldBeInCalendar)
+                {
+                    if (wasInCalendar)
+                        await _googleCalendarService.DeleteEventAsync(userId, task.Id.ToString(), cancellationToken);
+
+                    await _googleCalendarService.CreateEventAsync(userId, _mapper.Map<ToDoTaskLightDto>(task), cancellationToken);
+                }
+                else if (wasInCalendar)
+                {
+                    await _googleCalendarService.DeleteEventAsync(userId, task.Id.ToString(), cancellationToken);
+                }
+
+                await _unitOfWork.CommitAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackAsync(CancellationToken.None);
+                throw new InternalException("An error occurred while updating the task.", ex);
+            }
         }
 
         public async Task DeleteAsync(string taskId, string userId, CancellationToken cancellationToken = default)
@@ -245,6 +295,64 @@ namespace PromptlyNote.Services.Services
 
             await _taskRepository.UpdateSubTaskAsync(taskGuid, _mapper.Map<SubTask>(subTask), cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task AddToCalendar(string taskId, string userId, CancellationToken cancellationToken = default)
+        {
+            var taskGuid = taskId.ParseToGuidWithThrow("task");
+            var userGuid = userId.ParseToGuidWithThrow("user");
+
+            var task = await _taskRepository.FindAsync(
+                predicate: t => t.Id == taskGuid,
+                cancellationToken: cancellationToken
+            ) ?? throw new NotFoundException("task");
+
+            if (task.UserId != userGuid)
+                throw new ForbiddenException(ExceptionMessages.NotOwner("task"));
+
+            if (task.DueDate is null)
+                throw new ArgumentException("Task does not have a due date to add to calendar.");
+
+            task.SyncToGoogleCalendar = true;
+            await _unitOfWork.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                await _taskRepository.UpdateAsync(task);
+                await _googleCalendarService.DeleteEventAsync(userId, taskId, cancellationToken);
+                await _googleCalendarService.CreateEventAsync(userId, _mapper.Map<ToDoTaskLightDto>(task), cancellationToken);
+                await _unitOfWork.CommitAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackAsync(CancellationToken.None);
+                throw new InternalException("An error occurred while adding the task to the calendar.", ex);
+            }
+        }
+
+        public async Task RemoveFromCalendar(string taskId, string userId, CancellationToken cancellationToken = default)
+        {
+            var taskGuid = taskId.ParseToGuidWithThrow("task");
+            var userGuid = userId.ParseToGuidWithThrow("user");
+            var task = await _taskRepository.FindAsync(
+                predicate: t => t.Id == taskGuid,
+                cancellationToken: cancellationToken
+            ) ?? throw new NotFoundException("task");
+            if (task.UserId != userGuid)
+                throw new ForbiddenException(ExceptionMessages.NotOwner("task"));
+
+            task.SyncToGoogleCalendar = false;
+            await _unitOfWork.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                await _taskRepository.UpdateAsync(task);
+                await _googleCalendarService.DeleteEventAsync(userId, taskId, cancellationToken);
+                await _unitOfWork.CommitAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackAsync(CancellationToken.None);
+                throw new InternalException("An error occurred while removing the task from the calendar.", ex);
+            }
         }
     }
 }

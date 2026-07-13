@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PromptlyNote.Core.Interfaces.Services;
 using System.IdentityModel.Tokens.Jwt;
@@ -25,7 +24,7 @@ namespace PromptlyNote.Api.Controllers
             }
 
             var user = await _userService.GetAsync(userId, includeCategory, includeTasks, includeTaskLists, cancellationToken);
-            return user == null ? throw new KeyNotFoundException("User not found") : (IActionResult)Ok(user);
+            return user is null ? throw new KeyNotFoundException("User not found") : (IActionResult)Ok(user);
         }
 
         [HttpPut]
@@ -33,7 +32,7 @@ namespace PromptlyNote.Api.Controllers
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                       ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
+            if (userId is null)
             {
                 return Unauthorized();
             }
@@ -47,7 +46,7 @@ namespace PromptlyNote.Api.Controllers
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                       ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
+            if (userId is null)
             {
                 return Unauthorized();
             }

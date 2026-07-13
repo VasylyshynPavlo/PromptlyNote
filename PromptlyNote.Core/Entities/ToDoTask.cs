@@ -15,5 +15,8 @@
         public Guid TaskListId { get; set; }
         public TaskList? TaskList { get; set; }
         public List<SubTask> SubTasks { get; set; } = [];
+
+        public int? RemindBeforeMinutes { get; set; }
+        public bool SyncToGoogleCalendar { get; set; } = false;
     }
 }

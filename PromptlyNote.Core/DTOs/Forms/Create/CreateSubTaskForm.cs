@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PromptlyNote.Core.DTOs.Forms.Create
+﻿namespace PromptlyNote.Core.DTOs.Forms.Create
 {
     public class CreateSubTaskForm
     {

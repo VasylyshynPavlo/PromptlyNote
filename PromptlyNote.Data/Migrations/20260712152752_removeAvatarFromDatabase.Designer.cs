@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PromptlyNote.Data;
 
@@ -11,9 +12,11 @@ using PromptlyNote.Data;
 namespace PromptlyNote.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260712152752_removeAvatarFromDatabase")]
+    partial class removeAvatarFromDatabase
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -155,12 +158,6 @@ namespace PromptlyNote.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
-
-                    b.Property<int?>("RemindBeforeMinutes")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("SyncToGoogleCalendar")
-                        .HasColumnType("bit");
 
                     b.Property<Guid>("TaskListId")
                         .HasColumnType("uniqueidentifier");

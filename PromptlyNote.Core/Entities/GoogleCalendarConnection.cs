@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PromptlyNote.Core.Entities
+﻿namespace PromptlyNote.Core.Entities
 {
     public class GoogleCalendarConnection : BaseEntity
     {

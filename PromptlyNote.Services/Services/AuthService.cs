@@ -5,7 +5,6 @@ using Google.Apis.Auth.OAuth2.Flows;
 using Microsoft.Extensions.Configuration;
 using PromptlyNote.Core.Constants;
 using PromptlyNote.Core.DTOs.Forms.Auth;
-using PromptlyNote.Core.DTOs.Forms.Create;
 using PromptlyNote.Core.DTOs.LightDTOs;
 using PromptlyNote.Core.Entities;
 using PromptlyNote.Core.Exceptions;
@@ -13,9 +12,6 @@ using PromptlyNote.Core.Interfaces;
 using PromptlyNote.Core.Interfaces.Repositories;
 using PromptlyNote.Core.Interfaces.Services;
 using PromptlyNote.Core.Utils;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace PromptlyNote.Services.Services
 {
@@ -40,14 +36,13 @@ namespace PromptlyNote.Services.Services
         private readonly string _clientSecret = configuration["Authentication:Google:ClientSecret"]
             ?? throw new ArgumentNullException("Google ClientSecret is not configured.");
 
-        public async Task<(string accessToken, string refreshToken, UserLightDto userLightDto)> RegisterAsync(RegisterForm registerForm, CancellationToken cancellationToken = default)
+        public async Task<(string accessToken, UserLightDto userLightDto)> RegisterAsync(RegisterForm registerForm, CancellationToken cancellationToken = default)
         {
             var user = await CreateUserWithDefaultAsync(registerForm.FullName, registerForm.Email, null, false, PasswordHesher.HashPassword(registerForm.Password), cancellationToken);
-            var (accessToken, refreshToken) = await _jwtService.LoginAsync(user, cancellationToken);
-            return (accessToken, refreshToken, _mapper.Map<UserLightDto>(user));
+            return (_jwtService.GenerateAccessToken(user), _mapper.Map<UserLightDto>(user));
         }
 
-        public async Task<(string accessToken, string refreshToken, UserLightDto userLightDto)> LoginAsync(LoginForm loginForm, CancellationToken cancellationToken = default)
+        public async Task<(string accessToken, UserLightDto userLightDto)> LoginAsync(LoginForm loginForm, CancellationToken cancellationToken = default)
         {
             var user = await _userRepository.FindAsync(u => u.Email == loginForm.Email, cancellationToken: cancellationToken)
                 ?? throw new ForbiddenException("Invalid credentials.");
@@ -62,12 +57,12 @@ namespace PromptlyNote.Services.Services
                 throw new ForbiddenException("Invalid credentials.");
             }
 
-            var (accessToken, refreshToken) = await _jwtService.LoginAsync(user, cancellationToken);
-            return (accessToken, refreshToken, _mapper.Map<UserLightDto>(user));
+            return (_jwtService.GenerateAccessToken(user), _mapper.Map<UserLightDto>(user));
         }
 
-        public async Task<(string accessToken, string refreshToken, UserLightDto userLightDto)> AuthViaGoogleAsync(string code, string redirectUri, CancellationToken cancellationToken = default)
+        public async Task<(string accessToken, UserLightDto userLightDto)> AuthViaGoogleAsync(string code, string redirectUri, CancellationToken cancellationToken = default)
         {
+            Console.WriteLine("Logging in via Google...");
             using var flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
             {
                 ClientSecrets = new ClientSecrets
@@ -109,28 +104,12 @@ namespace PromptlyNote.Services.Services
             if (user is null)
             {
                 user = await CreateUserWithDefaultAsync(payload.Name, payload.Email, payload.Picture, true, null, cancellationToken);
-                var (accessToken, refreshToken) = await _jwtService.LoginAsync(user, cancellationToken);
-                return (accessToken, refreshToken, _mapper.Map<UserLightDto>(user));
             }
-            else
-            {
-                if (!user.GoogleAuth)
-                {
-                    throw new ForbiddenException("Invalid credentials.");
-                }
-                var (accessToken, refreshToken) = await _jwtService.LoginAsync(user, cancellationToken);
-                return (accessToken, refreshToken, _mapper.Map<UserLightDto>(user));
-            }
-        }
+            user.GoogleAuth = true;
+            await _userRepository.UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        public async Task<(string accessToken, string refreshToken)> RefreshAsync(string refreshToken, CancellationToken cancellationToken = default)
-        {
-            return await _jwtService.RefreshAsync(refreshToken, cancellationToken);
-        }
-
-        public async Task LogoutAsync(string refreshToken, CancellationToken cancellationToken = default)
-        {
-            await _jwtService.RevokeAsync(refreshToken, cancellationToken);
+            return (_jwtService.GenerateAccessToken(user), _mapper.Map<UserLightDto>(user));
         }
 
         private async Task<User> CreateUserWithDefaultAsync(string fullName, string email, string? avatarUrl, bool googleAuth, string? passwordHash, CancellationToken cancellationToken)
@@ -146,7 +125,6 @@ namespace PromptlyNote.Services.Services
                 {
                     FullName = fullName,
                     Email = email,
-                    AvatarUrl = avatarUrl,
                     GoogleAuth = googleAuth,
                     PasswordHash = passwordHash
                 };

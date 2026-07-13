@@ -1,3 +1,4 @@
+using Google;
 using Google.Apis.Auth;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Flows;
@@ -6,10 +7,10 @@ using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.Calendar.v3;
 using Google.Apis.Calendar.v3.Data;
 using Google.Apis.Services;
+using Google.Apis.Util;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Configuration;
-using PromptlyNote.Core.DTOs;
-using PromptlyNote.Core.DTOs.Forms.Create;
+using PromptlyNote.Core.DTOs.LightDTOs;
 using PromptlyNote.Core.Entities;
 using PromptlyNote.Core.Exceptions;
 using PromptlyNote.Core.Interfaces;
@@ -161,48 +162,71 @@ namespace PromptlyNote.Services.Services
             return payload.Email;
         }
 
-        public async Task<string> CreateEventAsync(string userId, CreateCalendarEventForm form, CancellationToken cancellationToken = default)
+        public async Task<string> CreateEventAsync(string userId, ToDoTaskLightDto dto, CancellationToken cancellationToken = default)
         {
             using var calendar = await BuildCalendarClientAsync(userId, cancellationToken);
 
+            if (dto.DueDate is null)
+            {
+                throw new ArgumentException("Due date is required to create a Google Calendar event.");
+            }
+
             var googleEvent = new Event
             {
-                Summary = form.Summary,
-                Description = form.Description,
-                Start = new EventDateTime { DateTimeDateTimeOffset = form.Start },
-                End = new EventDateTime { DateTimeDateTimeOffset = form.End }
+                Summary = $"Task completion deadline: {dto.Name}",
+                Description = dto.Note,
+                Start = new EventDateTime { DateTimeDateTimeOffset = dto.DueDate },
+                End = new EventDateTime { DateTimeDateTimeOffset = dto.DueDate + TimeSpan.FromHours(1) },
+                ExtendedProperties = new Event.ExtendedPropertiesData
+                {
+                    Private__ = new Dictionary<string, string>
+                    {
+                        { "source", "PromptlyNote" },
+                        { "taskId", dto.Id.ToLower() }
+                    }
+                }
             };
+
+            if (dto.RemindBeforeMinutes is not null)
+            {
+                googleEvent.Reminders = new Event.RemindersData
+                {
+                    UseDefault = false,
+                    Overrides = [new EventReminder
+                    {
+                        Method = "popup",
+                        Minutes = dto.RemindBeforeMinutes.Value
+                    }]
+                };
+            }
 
             var created = await calendar.Events.Insert(googleEvent, "primary").ExecuteAsync(cancellationToken);
             return created.Id;
         }
 
-        public async Task<List<CalendarEventDto>> ListEventsAsync(string userId, CancellationToken cancellationToken = default)
+        public async Task DeleteEventAsync(string userId, string taskId, CancellationToken cancellationToken = default)
         {
             using var calendar = await BuildCalendarClientAsync(userId, cancellationToken);
 
             var request = calendar.Events.List("primary");
-            request.TimeMinDateTimeOffset = DateTimeOffset.UtcNow;
-            request.SingleEvents = true;
-            request.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
-            request.MaxResults = 50;
+            request.PrivateExtendedProperty = new Repeatable<string>([$"taskId={taskId.ToLower()}", "source=PromptlyNote"]);
 
             var events = await request.ExecuteAsync(cancellationToken);
 
-            return [.. events.Items.Select(e => new CalendarEventDto
-            {
-                Id = e.Id,
-                Summary = e.Summary,
-                Description = e.Description,
-                Start = e.Start?.DateTimeDateTimeOffset,
-                End = e.End?.DateTimeDateTimeOffset
-            })];
-        }
+            var eventToDelete = events.Items.FirstOrDefault();
 
-        public async Task DeleteEventAsync(string userId, string eventId, CancellationToken cancellationToken = default)
-        {
-            using var calendar = await BuildCalendarClientAsync(userId, cancellationToken);
-            await calendar.Events.Delete("primary", eventId).ExecuteAsync(cancellationToken);
+            if (eventToDelete is null)
+                return;
+
+            try
+            {
+                await calendar.Events.Delete("primary", eventToDelete.Id).ExecuteAsync(cancellationToken);
+
+            }
+            catch (GoogleApiException ex)
+            {
+                throw new InternalException("Failed to delete Google Calendar event.", ex);
+            }
         }
 
         private async Task<CalendarService> BuildCalendarClientAsync(string userId, CancellationToken cancellationToken)

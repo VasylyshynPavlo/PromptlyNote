@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PromptlyNote.Core.Models
+﻿namespace PromptlyNote.Core.Models
 {
     public class DefaultCategoryTemplate
     {

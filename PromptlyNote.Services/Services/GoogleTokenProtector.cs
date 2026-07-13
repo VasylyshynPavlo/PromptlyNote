@@ -1,8 +1,5 @@
 ﻿using Microsoft.AspNetCore.DataProtection;
 using PromptlyNote.Core.Interfaces.Services;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace PromptlyNote.Services.Services
 {

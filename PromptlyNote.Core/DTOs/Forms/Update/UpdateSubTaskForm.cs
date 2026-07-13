@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PromptlyNote.Core.DTOs.Forms.Update
+﻿namespace PromptlyNote.Core.DTOs.Forms.Update
 {
     public class UpdateSubTaskForm
     {
