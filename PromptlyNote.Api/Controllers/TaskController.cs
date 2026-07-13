@@ -19,7 +19,7 @@ namespace PromptlyNote.Api.Controllers
         private readonly IUserService _userService = userService;
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(string id, bool includeCategory = false, bool includeTaskList = false, bool includeSubTasks = false, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> Get(string id, bool includeCategory = false, bool includeTaskList = false, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                       ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -28,11 +28,11 @@ namespace PromptlyNote.Api.Controllers
                 return Unauthorized();
             }
 
-            return Ok(await _toDoTaskService.GetAsync(id, userId, includeCategory, includeTaskList, includeSubTasks, cancellationToken));
+            return Ok(await _toDoTaskService.GetAsync(id, userId, includeCategory, includeTaskList, cancellationToken));
         }
 
         [HttpGet]
-        public async Task<IActionResult> List(int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, ToDoTaskSortBy toDoTaskSortBy = ToDoTaskSortBy.Name, bool includeCategory = false, bool includeTaskList = false, bool includeSubTasks = false, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> List(int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, ToDoTaskSortBy toDoTaskSortBy = ToDoTaskSortBy.Name, bool includeCategory = false, bool includeTaskList = false, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                       ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -41,7 +41,7 @@ namespace PromptlyNote.Api.Controllers
                 return Unauthorized();
             }
 
-            return Ok(await _toDoTaskService.ListAsync(userId, page, pageSize, toDoTaskSortBy, includeCategory, includeTaskList, includeSubTasks, cancellationToken));
+            return Ok(await _toDoTaskService.ListAsync(userId, page, pageSize, toDoTaskSortBy, includeCategory, includeTaskList, cancellationToken));
         }
 
         [HttpPost]
@@ -112,49 +112,7 @@ namespace PromptlyNote.Api.Controllers
             return NoContent();
         }
 
-        [HttpPost("{taskId}/subtasks")]
-        public async Task<IActionResult> AddSubTask(string taskId, [FromForm] CreateSubTaskForm form, CancellationToken cancellationToken = default)
-        {
-            var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-                      ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId is null)
-            {
-                return Unauthorized();
-            }
-
-            await _toDoTaskService.AddSubTaskAsync(taskId, userId, form, cancellationToken);
-            return NoContent();
-        }
-
-        [HttpDelete("{taskId}/subtasks/{subTaskId}")]
-        public async Task<IActionResult> DeleteSubTask(string taskId, string subTaskId, CancellationToken cancellationToken = default)
-        {
-            var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-                      ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId is null)
-            {
-                return Unauthorized();
-            }
-
-            await _toDoTaskService.DeleteSubTaskAsync(subTaskId, taskId, userId, cancellationToken);
-            return NoContent();
-        }
-
-        [HttpPut("{taskId}/subtasks/{subTaskId}")]
-        public async Task<IActionResult> UpdateSubTask(string taskId, string subTaskId, [FromForm] UpdateSubTaskForm form, CancellationToken cancellationToken = default)
-        {
-            var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-                      ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId is null)
-            {
-                return Unauthorized();
-            }
-
-            await _toDoTaskService.UpdateSubTaskAsync(taskId, userId, form, cancellationToken);
-            return NoContent();
-        }
-
-        [HttpPut("{taskId}/subtasks/replace")]
+        [HttpPut("{taskId}/subtasks")]
         public async Task<IActionResult> ReplaceSubTasks(string taskId, [FromBody] List<CreateSubTaskForm> forms, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value

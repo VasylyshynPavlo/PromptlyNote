@@ -63,6 +63,12 @@ namespace PromptlyNote.Services.Services
             if (taskList.UserId != userGuid)
                 throw new ForbiddenException(ExceptionMessages.NotOwner("task list"));
 
+            var subTasks = _mapper.Map<List<SubTask>>(form.SubTasks);
+            for (int i = 0; i < subTasks.Count; i++)
+            {
+                subTasks[i].Order = i + 1;
+            }
+
             var task = new ToDoTask
             {
                 Name = form.Name,
@@ -115,6 +121,12 @@ namespace PromptlyNote.Services.Services
 
             if (shouldBeInCalendar && form.DueDate is null)
                 throw new ArgumentException("Task does not have a due date to sync to Google Calendar.");
+
+            var subTasks = _mapper.Map<List<SubTask>>(form.SubTasks);
+            for (int i = 0; i < subTasks.Count; i++)
+            {
+                subTasks[i].Order = i + 1;
+            }
 
             task.Name = form.Name;
             task.Note = form.Note;
@@ -169,7 +181,7 @@ namespace PromptlyNote.Services.Services
             await _taskRepository.DeleteAsync(taskGuid, cancellationToken);
         }
 
-        public async Task<PagedResult<ToDoTaskDto>> ListAsync(string userId, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, ToDoTaskSortBy toDoTaskSortBy = ToDoTaskSortBy.Name, bool includeCategory = false, bool includeTaskList = false, bool includeSubTasks = false, CancellationToken cancellationToken = default)
+        public async Task<PagedResult<ToDoTaskDto>> ListAsync(string userId, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, ToDoTaskSortBy toDoTaskSortBy = ToDoTaskSortBy.Name, bool includeCategory = false, bool includeTaskList = false, CancellationToken cancellationToken = default)
         {
             var userGuid = userId.ParseToGuidWithThrow("user");
 
@@ -178,7 +190,7 @@ namespace PromptlyNote.Services.Services
             var includes = new List<Expression<Func<ToDoTask, object>>>();
             if (includeCategory) includes.Add(t => t.Category!);
             if (includeTaskList) includes.Add(t => t.TaskList!);
-            if (includeSubTasks) includes.Add(t => t.SubTasks!);
+            includes.Add(t => t.SubTasks);
 
             var orderBy = toDoTaskSortBy switch
             {
@@ -199,10 +211,15 @@ namespace PromptlyNote.Services.Services
                 includes: [.. includes]
             );
 
+            foreach (var item in result.Data)
+            {
+                item.SubTasks = [.. item.SubTasks.OrderBy(st => st.Order)];
+            }
+
             return new PagedResult<ToDoTaskDto>(_mapper.Map<List<ToDoTaskDto>>(result.Data), result.Count, result.CurrentPage, result.TotalPages);
         }
 
-        public async Task<ToDoTaskDto> GetAsync(string toDoTaskId, string userId, bool includeCategory = false, bool includeTaskList = false, bool includeSubTasks = false, CancellationToken cancellationToken = default)
+        public async Task<ToDoTaskDto> GetAsync(string toDoTaskId, string userId, bool includeCategory = false, bool includeTaskList = false, CancellationToken cancellationToken = default)
         {
             var taskGuid = toDoTaskId.ParseToGuidWithThrow("task");
             var userGuid = userId.ParseToGuidWithThrow("user");
@@ -210,7 +227,7 @@ namespace PromptlyNote.Services.Services
             var includes = new List<Expression<Func<ToDoTask, object>>>();
             if (includeCategory) includes.Add(t => t.Category!);
             if (includeTaskList) includes.Add(t => t.TaskList!);
-            if (includeSubTasks) includes.Add(t => t.SubTasks!);
+            includes.Add(t => t.SubTasks);
 
             var task = await _taskRepository.FindAsync(
                 predicate: t => t.Id == taskGuid,
@@ -221,44 +238,9 @@ namespace PromptlyNote.Services.Services
             if (task.UserId != userGuid)
                 throw new ForbiddenException(ExceptionMessages.NotOwner("task"));
 
+            task.SubTasks = [.. task.SubTasks.OrderBy(st => st.Order)];
+
             return _mapper.Map<ToDoTaskDto>(task);
-        }
-
-        public async Task AddSubTaskAsync(string taskId, string userId, CreateSubTaskForm subTask, CancellationToken cancellationToken = default)
-        {
-            var taskGuid = taskId.ParseToGuidWithThrow("task");
-            var userGuid = userId.ParseToGuidWithThrow("user");
-
-            var task = await _taskRepository.FindAsync(
-                predicate: t => t.Id == taskGuid,
-                selector: t => new { t.UserId },
-                cancellationToken: cancellationToken
-            ) ?? throw new NotFoundException("task");
-
-            if (task.UserId != userGuid)
-                throw new ForbiddenException(ExceptionMessages.NotOwner("task"));
-
-            await _taskRepository.AddSubTaskAsync(taskGuid, _mapper.Map<SubTask>(subTask), cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-        }
-
-        public async Task DeleteSubTaskAsync(string subTaskId, string taskId, string userId, CancellationToken cancellationToken = default)
-        {
-            var taskGuid = taskId.ParseToGuidWithThrow("task");
-            var userGuid = userId.ParseToGuidWithThrow("user");
-            var subTaskGuid = subTaskId.ParseToGuidWithThrow("sub task");
-
-            var task = await _taskRepository.FindAsync(
-                predicate: t => t.Id == taskGuid,
-                selector: t => new { t.UserId },
-                cancellationToken: cancellationToken
-            ) ?? throw new NotFoundException("task");
-
-            if (task.UserId != userGuid)
-                throw new ForbiddenException(ExceptionMessages.NotOwner("task"));
-
-            await _taskRepository.DeleteSubTaskAsync(subTaskGuid, taskGuid, cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         public async Task ReplaceSubTasksAsync(string taskId, string userId, List<CreateSubTaskForm> subTasks, CancellationToken cancellationToken = default)
@@ -275,25 +257,13 @@ namespace PromptlyNote.Services.Services
             if (task.UserId != userGuid)
                 throw new ForbiddenException(ExceptionMessages.NotOwner("task"));
 
-            await _taskRepository.ReplaceSubTasksAsync(taskGuid, _mapper.Map<List<SubTask>>(subTasks), cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-        }
+            var orderedSubTasks = _mapper.Map<List<SubTask>>(subTasks);
+            for (int i = 0; i < subTasks.Count; i++)
+            {
+                orderedSubTasks[i].Order = i + 1;
+            }
 
-        public async Task UpdateSubTaskAsync(string taskId, string userId, UpdateSubTaskForm subTask, CancellationToken cancellationToken = default)
-        {
-            var taskGuid = taskId.ParseToGuidWithThrow("task");
-            var userGuid = userId.ParseToGuidWithThrow("user");
-
-            var task = await _taskRepository.FindAsync(
-                predicate: t => t.Id == taskGuid,
-                selector: t => new { t.UserId },
-                cancellationToken: cancellationToken
-            ) ?? throw new NotFoundException("task");
-
-            if (task.UserId != userGuid)
-                throw new ForbiddenException(ExceptionMessages.NotOwner("task"));
-
-            await _taskRepository.UpdateSubTaskAsync(taskGuid, _mapper.Map<SubTask>(subTask), cancellationToken);
+            await _taskRepository.ReplaceSubTasksAsync(taskGuid, orderedSubTasks, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
