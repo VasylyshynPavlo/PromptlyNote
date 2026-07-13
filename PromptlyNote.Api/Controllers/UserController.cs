@@ -7,7 +7,7 @@ using System.Security.Claims;
 namespace PromptlyNote.Api.Controllers
 {
     [Authorize]
-    [Route("api/[controller]/[action]")]
+    [Route("api/user")]
     [ApiController]
     public class UserController(IUserService userService) : ControllerBase
     {

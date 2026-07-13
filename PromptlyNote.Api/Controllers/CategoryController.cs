@@ -10,14 +10,14 @@ using System.Security.Claims;
 namespace PromptlyNote.Api.Controllers
 {
     [Authorize]
-    [Route("api/[controller]/[action]")]
+    [Route("api/category")]
     [ApiController]
     public class CategoryController(ICategoryService categoryService, IUserService userService) : ControllerBase
     {
         private readonly ICategoryService _categoryService = categoryService;
         private readonly IUserService _userService = userService;
 
-        [HttpGet]
+        [HttpGet("{id}")]
         public async Task<IActionResult> Get(string id, bool includeTasks = false, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
@@ -57,7 +57,7 @@ namespace PromptlyNote.Api.Controllers
             return Created();
         }
 
-        [HttpDelete]
+        [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value

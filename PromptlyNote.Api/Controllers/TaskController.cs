@@ -11,14 +11,14 @@ using System.Security.Claims;
 namespace PromptlyNote.Api.Controllers
 {
     [Authorize]
-    [Route("api/[controller]/[action]")]
+    [Route("api/task")]
     [ApiController]
     public class TaskController(IToDoTaskService toDoTaskService, IUserService userService) : ControllerBase
     {
         private readonly IToDoTaskService _toDoTaskService = toDoTaskService;
         private readonly IUserService _userService = userService;
 
-        [HttpGet]
+        [HttpGet("{id}")]
         public async Task<IActionResult> Get(string id, bool includeCategory = false, bool includeTaskList = false, bool includeSubTasks = false, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
@@ -58,7 +58,7 @@ namespace PromptlyNote.Api.Controllers
             return Created();
         }
 
-        [HttpPut]
+        [HttpPut("{id}")]
         public async Task<IActionResult> Update(string id, [FromBody] UpdateToDoTaskForm form, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
@@ -69,10 +69,10 @@ namespace PromptlyNote.Api.Controllers
             }
 
             await _toDoTaskService.UpdateAsync(id, userId, form, cancellationToken);
-            return Ok();
+            return NoContent();
         }
 
-        [HttpDelete]
+        [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
@@ -83,10 +83,10 @@ namespace PromptlyNote.Api.Controllers
             }
 
             await _toDoTaskService.DeleteAsync(id, userId, cancellationToken);
-            return Ok();
+            return NoContent();
         }
 
-        [HttpPost]
+        [HttpPost("{taskId}/calendar")]
         public async Task<IActionResult> AddToCalendar(string taskId, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
@@ -96,10 +96,10 @@ namespace PromptlyNote.Api.Controllers
                 return Unauthorized();
             }
             await _toDoTaskService.AddToCalendar(taskId, userId, cancellationToken);
-            return Ok();
+            return NoContent();
         }
 
-        [HttpDelete]
+        [HttpDelete("{taskId}/calendar")]
         public async Task<IActionResult> DeleteFromCalendar(string taskId, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
@@ -109,10 +109,10 @@ namespace PromptlyNote.Api.Controllers
                 return Unauthorized();
             }
             await _toDoTaskService.RemoveFromCalendar(taskId, userId, cancellationToken);
-            return Ok();
+            return NoContent();
         }
 
-        [HttpPost]
+        [HttpPost("{taskId}/subtasks")]
         public async Task<IActionResult> AddSubTask(string taskId, [FromForm] CreateSubTaskForm form, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
@@ -123,11 +123,11 @@ namespace PromptlyNote.Api.Controllers
             }
 
             await _toDoTaskService.AddSubTaskAsync(taskId, userId, form, cancellationToken);
-            return Ok();
+            return NoContent();
         }
 
-        [HttpDelete]
-        public async Task<IActionResult> DeleteSubTask(string subTaskId, string taskId, CancellationToken cancellationToken = default)
+        [HttpDelete("{taskId}/subtasks/{subTaskId}")]
+        public async Task<IActionResult> DeleteSubTask(string taskId, string subTaskId, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                       ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -137,11 +137,11 @@ namespace PromptlyNote.Api.Controllers
             }
 
             await _toDoTaskService.DeleteSubTaskAsync(subTaskId, taskId, userId, cancellationToken);
-            return Ok();
+            return NoContent();
         }
 
-        [HttpPut]
-        public async Task<IActionResult> UpdateSubTask(string taskId, [FromForm] UpdateSubTaskForm form, CancellationToken cancellationToken = default)
+        [HttpPut("{taskId}/subtasks/{subTaskId}")]
+        public async Task<IActionResult> UpdateSubTask(string taskId, string subTaskId, [FromForm] UpdateSubTaskForm form, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                       ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -151,10 +151,10 @@ namespace PromptlyNote.Api.Controllers
             }
 
             await _toDoTaskService.UpdateSubTaskAsync(taskId, userId, form, cancellationToken);
-            return Ok();
+            return NoContent();
         }
 
-        [HttpPut]
+        [HttpPut("{taskId}/subtasks/replace")]
         public async Task<IActionResult> ReplaceSubTasks(string taskId, [FromBody] List<CreateSubTaskForm> forms, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
@@ -165,7 +165,7 @@ namespace PromptlyNote.Api.Controllers
             }
 
             await _toDoTaskService.ReplaceSubTasksAsync(taskId, userId, forms, cancellationToken);
-            return Ok();
+            return NoContent();
         }
     }
 }

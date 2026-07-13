@@ -11,14 +11,14 @@ using System.Security.Claims;
 namespace PromptlyNote.Api.Controllers
 {
     [Authorize]
-    [Route("api/[controller]/[action]")]
+    [Route("api/tasklist")]
     [ApiController]
     public class TaskListController(ITaskListService taskListService, IUserService userService) : ControllerBase
     {
         private readonly ITaskListService _taskListService = taskListService;
         private readonly IUserService _userService = userService;
 
-        [HttpGet]
+        [HttpGet("{id}")]
         public async Task<IActionResult> Get(string id, bool includeTasks = false, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
@@ -58,7 +58,7 @@ namespace PromptlyNote.Api.Controllers
             return Ok(await _taskListService.ListAsync(userId, page, pageSize, sortBy, includeTasks, cancellationToken));
         }
 
-        [HttpPut]
+        [HttpPut("{id}")]
         public async Task<IActionResult> Update(string id, [FromForm] UpdateTaskListForm updateTaskListForm, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
@@ -69,10 +69,10 @@ namespace PromptlyNote.Api.Controllers
             }
 
             await _taskListService.UpdateAsync(id, userId, updateTaskListForm, cancellationToken);
-            return Ok();
+            return NoContent();
         }
 
-        [HttpDelete]
+        [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
@@ -83,7 +83,7 @@ namespace PromptlyNote.Api.Controllers
             }
 
             await _taskListService.DeleteAsync(id, userId, cancellationToken);
-            return Ok();
+            return NoContent();
         }
     }
 }

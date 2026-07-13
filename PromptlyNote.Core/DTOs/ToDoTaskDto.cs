@@ -19,11 +19,6 @@ namespace PromptlyNote.Core.DTOs
 
         public int? RemindBeforeMinutes { get; set; }
 
-        // Намір користувача синхронізувати таску з календарем.
         public bool SyncToGoogleCalendar { get; set; } = false;
-
-        // Чи реально зараз має бути подія в календарі (завершені туди не потрапляють).
-        // Саме це поле фронт має показувати як "в календарі".
-        public bool IsInGoogleCalendar => SyncToGoogleCalendar && !IsCompleted;
     }
 }

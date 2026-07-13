@@ -6,13 +6,13 @@ using System.Text.Json;
 
 namespace PromptlyNote.Api.Controllers
 {
-    [Route("api/[controller]/[action]")]
+    [Route("api/auth")]
     [ApiController]
     public class AuthController(IAuthService authService) : ControllerBase
     {
         private readonly IAuthService _authService = authService;
 
-        [HttpPost]
+        [HttpPost("login")]
         public async Task<IActionResult> Login([FromForm] LoginForm form, CancellationToken cancellationToken = default)
         {
             var (accessToken, userLightDto) = await _authService.LoginAsync(form, cancellationToken);
@@ -20,7 +20,7 @@ namespace PromptlyNote.Api.Controllers
             return Ok(userLightDto);
         }
 
-        [HttpPost]
+        [HttpPost("register")]
         public async Task<IActionResult> Register([FromForm] RegisterForm form, CancellationToken cancellationToken = default)
         {
             var (accessToken, userLightDto) = await _authService.RegisterAsync(form, cancellationToken);
@@ -28,7 +28,7 @@ namespace PromptlyNote.Api.Controllers
             return Ok(userLightDto);
         }
 
-        [HttpPost]
+        [HttpPost("login/google")]
         public async Task<IActionResult> LoginViaGoogle([FromForm] GoogleAuthForm form, CancellationToken cancellationToken = default)
         {
             var (accessToken, userLightDto) = await _authService.AuthViaGoogleAsync(form.Code, form.RedirectUri, cancellationToken);
@@ -36,7 +36,7 @@ namespace PromptlyNote.Api.Controllers
             return Ok(userLightDto);
         }
 
-        [HttpPost]
+        [HttpPost("logout")]
         public IActionResult Logout()
         {
             ClearAuthCookies();

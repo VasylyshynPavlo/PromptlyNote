@@ -8,7 +8,7 @@ using System.Security.Claims;
 namespace PromptlyNote.Api.Controllers
 {
     [Authorize]
-    [Route("api/[controller]/[action]")]
+    [Route("api/calendar")]
     [ApiController]
     public class CalendarController(IGoogleCalendarService googleCalendarService) : ControllerBase
     {
@@ -16,7 +16,7 @@ namespace PromptlyNote.Api.Controllers
 
         private const string FrontendResultUrl = "http://localhost:5173/settings";
 
-        [HttpGet]
+        [HttpGet("connect")]
         public IActionResult Connect()
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
@@ -31,7 +31,7 @@ namespace PromptlyNote.Api.Controllers
         }
 
         [AllowAnonymous]
-        [HttpGet]
+        [HttpGet("callback")]
         public async Task<IActionResult> Callback(
             string? code, string? state, string? error, CancellationToken cancellationToken = default)
         {
