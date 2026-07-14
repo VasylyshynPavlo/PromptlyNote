@@ -16,10 +16,6 @@ namespace PromptlyNote.Services.Mapping
             CreateMap<CategoryDto, Category>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.Parse(src.Id)))
                 .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => Guid.Parse(src.UserId)));
-
-            CreateMap<Category, CategoryLightDto>()
-                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))
-                .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.UserId.ToString()));
         }
     }
 }

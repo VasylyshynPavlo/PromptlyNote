@@ -102,50 +102,33 @@ namespace PromptlyNote.Services.Services
             await _userRepository.DeleteAsync(userGuid, cancellationToken);
         }
 
-        public async Task<UserDto?> GetAsync(string userId, bool includeCategories = false, bool includeTasks = false, bool includeTaskLists = false, CancellationToken cancellationToken = default)
+        public async Task<UserDto?> GetAsync(string userId, CancellationToken cancellationToken = default)
         {
             var userGuid = userId.ParseToGuidWithThrow("user");
 
-            var includes = new List<Expression<Func<User, object>>>();
-            if (includeCategories) includes.Add(u => u.Categories);
-            if (includeTasks) includes.Add(u => u.Tasks);
-            if (includeTaskLists) includes.Add(u => u.TaskLists);
-
             var user = await _userRepository.FindAsync(
                 predicate: u => u.Id == userGuid,
-                cancellationToken: cancellationToken,
-                includes: [.. includes]
-            ) ?? throw new NotFoundException("user");
-
-            return _mapper.Map<UserDto>(user);
-        }
-
-        public async Task<UserDto?> GetByEmailAsync(string email, bool includeCategories = false, bool includeTasks = false, bool includeTaskLists = false, CancellationToken cancellationToken = default)
-        {
-            var includes = new List<Expression<Func<User, object>>>();
-            if (includeCategories) includes.Add(u => u.Categories);
-            if (includeTasks) includes.Add(u => u.Tasks);
-            if (includeTaskLists) includes.Add(u => u.TaskLists);
-
-            var user = await _userRepository.FindAsync(
-                predicate: u => u.Email == email,
-                includes: [.. includes],
                 cancellationToken: cancellationToken
             ) ?? throw new NotFoundException("user");
 
             return _mapper.Map<UserDto>(user);
         }
 
-        public async Task<PagedResult<UserDto>> ListAsync(string userId, int page = 0, int pageSize = 10, UserSortBy userSortBy = UserSortBy.FullName, bool includeTasks = false, bool includeCategory = false, bool includeTaskLists = false, CancellationToken cancellationToken = default)
+        public async Task<UserDto?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+        {
+            var user = await _userRepository.FindAsync(
+                predicate: u => u.Email == email,
+                cancellationToken: cancellationToken
+            ) ?? throw new NotFoundException("user");
+
+            return _mapper.Map<UserDto>(user);
+        }
+
+        public async Task<PagedResult<UserDto>> ListAsync(string userId, int page = 0, int pageSize = 10, UserSortBy userSortBy = UserSortBy.FullName, CancellationToken cancellationToken = default)
         {
             var userGuid = userId.ParseToGuidWithThrow("user");
 
             PaginationHelper.ValidatePageSettings(page, pageSize);
-
-            var includes = new List<Expression<Func<User, object>>>();
-            if (includeCategory) includes.Add(u => u.Categories);
-            if (includeTasks) includes.Add(u => u.Tasks);
-            if (includeTaskLists) includes.Add(u => u.TaskLists);
 
             var orderBy = userSortBy switch
             {
@@ -160,8 +143,7 @@ namespace PromptlyNote.Services.Services
                 predicate: u => u.Id == userGuid,
                 page: page,
                 pageSize: pageSize,
-                cancellationToken: cancellationToken,
-                includes: [.. includes]
+                cancellationToken: cancellationToken
             );
 
             return new PagedResult<UserDto>(

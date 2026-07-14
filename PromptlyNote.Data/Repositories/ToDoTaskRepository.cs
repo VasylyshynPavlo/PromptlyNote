@@ -8,48 +8,6 @@ namespace PromptlyNote.Data.Repositories
     {
         protected readonly DbSet<ToDoTask> toDoTasks = context.Set<ToDoTask>();
 
-        public async Task AddSubTaskAsync(
-            Guid taskId,
-            SubTask subTask,
-            CancellationToken cancellationToken = default)
-        {
-            var task = await toDoTasks
-                .Include(t => t.SubTasks)
-                .FirstOrDefaultAsync(t => t.Id == taskId, cancellationToken);
-
-            if (task is null)
-            {
-                return;
-            }
-
-            task.SubTasks.Add(subTask);
-            Context.Entry(subTask).State = EntityState.Added;
-            task.UpdatedAt = DateTime.UtcNow;
-        }
-
-        public async Task DeleteSubTaskAsync(Guid id, Guid taskId, CancellationToken cancellationToken = default)
-        {
-            var task = await toDoTasks
-                .Include(t => t.SubTasks)
-                .FirstOrDefaultAsync(t => t.Id == taskId, cancellationToken);
-
-            if (task is null)
-            {
-                return;
-            }
-
-            var subTask = task.SubTasks.FirstOrDefault(st => st.Id == id);
-
-            if (subTask is null)
-            {
-                return;
-            }
-
-            task.SubTasks.Remove(subTask);
-            Context.Entry(subTask).State = EntityState.Deleted;
-            task.UpdatedAt = DateTime.UtcNow;
-        }
-
         public async Task ReplaceSubTasksAsync(Guid taskId, List<SubTask> subTasks, CancellationToken cancellationToken = default)
         {
             var task = await toDoTasks
@@ -67,30 +25,6 @@ namespace PromptlyNote.Data.Repositories
                 Context.Entry(subTask).State = EntityState.Added;
             }
             task.UpdatedAt = DateTime.UtcNow;
-        }
-
-        public async Task UpdateSubTaskAsync(Guid taskId, SubTask subTask, CancellationToken cancellationToken = default)
-        {
-            var task = await toDoTasks
-                .Include(t => t.SubTasks)
-                .FirstOrDefaultAsync(t => t.Id == taskId, cancellationToken);
-
-            if (task is null)
-            {
-                return;
-            }
-
-            var existingSubTask = task.SubTasks.FirstOrDefault(st => st.Id == subTask.Id);
-
-            if (existingSubTask is null)
-            {
-                return;
-            }
-
-            existingSubTask.Name = subTask.Name;
-            existingSubTask.IsCompleted = subTask.IsCompleted;
-            existingSubTask.UpdatedAt = DateTime.UtcNow;
-            Context.Entry(existingSubTask).State = EntityState.Modified;
         }
     }
 }

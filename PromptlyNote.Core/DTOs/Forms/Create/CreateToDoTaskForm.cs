@@ -8,7 +8,6 @@ namespace PromptlyNote.Core.DTOs.Forms.Create
         [MaxLength(255, ErrorMessage = "Name cannot exceed 255 characters.")]
         public string Name { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Note is required.")]
         [MaxLength(1000, ErrorMessage = "Note cannot exceed 1000 characters.")]
         public string Note { get; set; } = string.Empty;
 

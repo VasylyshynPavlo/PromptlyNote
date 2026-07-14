@@ -8,6 +8,5 @@ namespace PromptlyNote.Core.DTOs
         public string ColorHex { get; set; } = string.Empty;
         public bool Default { get; set; } = false;
         public string UserId { get; set; } = string.Empty;
-        public List<ToDoTaskLightDto> Tasks { get; set; } = [];
     }
 }

@@ -18,7 +18,7 @@ namespace PromptlyNote.Api.Controllers
         private readonly IUserService _userService = userService;
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(string id, bool includeTasks = false, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> Get(string id, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                       ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -27,11 +27,11 @@ namespace PromptlyNote.Api.Controllers
                 return Unauthorized();
             }
 
-            return Ok(await _categoryService.GetAsync(id, userId, includeTasks, cancellationToken));
+            return Ok(await _categoryService.GetAsync(id, userId, cancellationToken));
         }
 
         [HttpGet]
-        public async Task<IActionResult> List(int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, CategorySortBy sortBy = CategorySortBy.Name, bool includeTasks = false, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> List(int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, CategorySortBy sortBy = CategorySortBy.Name, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                        ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -40,7 +40,7 @@ namespace PromptlyNote.Api.Controllers
                 return Unauthorized();
             }
 
-            return Ok(await _categoryService.ListAsync(userId, page, pageSize, sortBy, includeTasks, cancellationToken));
+            return Ok(await _categoryService.ListAsync(userId, page, pageSize, sortBy, cancellationToken));
         }
 
         [HttpPost]

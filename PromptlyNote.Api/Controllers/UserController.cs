@@ -14,7 +14,7 @@ namespace PromptlyNote.Api.Controllers
         private readonly IUserService _userService = userService;
 
         [HttpGet]
-        public async Task<IActionResult> Me(bool includeCategory = false, bool includeTasks = false, bool includeTaskLists = false, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> Me(CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                       ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -23,7 +23,7 @@ namespace PromptlyNote.Api.Controllers
                 return Unauthorized();
             }
 
-            var user = await _userService.GetAsync(userId, includeCategory, includeTasks, includeTaskLists, cancellationToken);
+            var user = await _userService.GetAsync(userId, cancellationToken);
             return user is null ? throw new KeyNotFoundException("User not found") : (IActionResult)Ok(user);
         }
 

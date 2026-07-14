@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Google.Apis.Json;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PromptlyNote.Core.Constants;
 using PromptlyNote.Core.DTOs.Forms.Create;
@@ -7,6 +8,7 @@ using PromptlyNote.Core.Enums;
 using PromptlyNote.Core.Interfaces.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace PromptlyNote.Api.Controllers
 {
@@ -32,7 +34,7 @@ namespace PromptlyNote.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> List(int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, ToDoTaskSortBy toDoTaskSortBy = ToDoTaskSortBy.Name, bool includeCategory = false, bool includeTaskList = false, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> List(int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, ToDoTaskSortBy toDoTaskSortBy = ToDoTaskSortBy.Name, bool includeCategory = false, bool includeTaskList = false, string? categoryFilter = null, string? taskListFilter = null, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                       ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -41,7 +43,7 @@ namespace PromptlyNote.Api.Controllers
                 return Unauthorized();
             }
 
-            return Ok(await _toDoTaskService.ListAsync(userId, page, pageSize, toDoTaskSortBy, includeCategory, includeTaskList, cancellationToken));
+            return Ok(await _toDoTaskService.ListAsync(userId, page, pageSize, toDoTaskSortBy, includeCategory, includeTaskList, categoryFilter, taskListFilter, cancellationToken));
         }
 
         [HttpPost]
@@ -53,6 +55,8 @@ namespace PromptlyNote.Api.Controllers
             {
                 return Unauthorized();
             }
+
+            Console.WriteLine($"Form: {JsonSerializer.Serialize(form)}");
 
             await _toDoTaskService.CreateAsync(form, userId, cancellationToken);
             return Created();

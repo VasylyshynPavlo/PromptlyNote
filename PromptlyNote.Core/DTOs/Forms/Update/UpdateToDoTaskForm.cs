@@ -9,7 +9,6 @@ namespace PromptlyNote.Core.DTOs.Forms.Update
         [MinLength(1, ErrorMessage = "Name must be at least 1 character long.")]
         public string Name { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Note is required.")]
         [MaxLength(1000, ErrorMessage = "Note cannot exceed 1000 characters.")]
         public string Note { get; set; } = string.Empty;
 

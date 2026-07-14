@@ -1,4 +1,5 @@
 using AutoMapper;
+using LinqKit;
 using PromptlyNote.Core.Constants;
 using PromptlyNote.Core.DTOs;
 using PromptlyNote.Core.DTOs.Forms.Create;
@@ -18,11 +19,13 @@ namespace PromptlyNote.Services.Services
     public class TaskListService(
         ITaskListRepository taskListRepository,
         IMapper mapper,
-        IUnitOfWork unitOfWork) : ITaskListService
+        IUnitOfWork unitOfWork,
+        IToDoTaskRepository toDoTaskRepository) : ITaskListService
     {
         private readonly ITaskListRepository _taskListRepository = taskListRepository;
         private readonly IMapper _mapper = mapper;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
+        private readonly IToDoTaskRepository _toDoTaskRepository = toDoTaskRepository;
 
         public async Task CreateAsync(CreateTaskListForm form, string userId, CancellationToken cancellationToken = default)
         {
@@ -60,15 +63,11 @@ namespace PromptlyNote.Services.Services
             await _taskListRepository.DeleteAsync(taskListGuid, cancellationToken);
         }
 
-        public async Task<PagedResult<TaskListDto>> ListAsync(string userId, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, TaskListSortBy taskListSortBy = TaskListSortBy.Name, bool includeTasks = false, CancellationToken cancellationToken = default)
+        public async Task<PagedResult<TaskListDto>> ListAsync(string userId, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, TaskListSortBy taskListSortBy = TaskListSortBy.Name, CancellationToken cancellationToken = default)
         {
             var userGuid = userId.ParseToGuidWithThrow("user");
 
             PaginationHelper.ValidatePageSettings(page, pageSize);
-
-            var includes = new List<Expression<Func<TaskList, object>>>();
-            if (includeTasks)
-                includes.Add(tl => tl.Tasks);
 
             var orderBy = taskListSortBy switch
             {
@@ -84,41 +83,40 @@ namespace PromptlyNote.Services.Services
                 page: page,
                 pageSize: pageSize,
                 orderBy: orderBy,
-                cancellationToken: cancellationToken,
-                includes: [.. includes]
+                cancellationToken: cancellationToken
             );
 
-            Console.WriteLine($"UserId: {userGuid}");
-            Console.WriteLine($"Page: {page}, PageSize: {pageSize}");
-            Console.WriteLine($"Fetched task list count: {result.Data.Count}");
+            var taskListDtos = _mapper.Map<IReadOnlyCollection<TaskListDto>>(result.Data);
+            foreach (var tl in taskListDtos)
+            {
+                var id = tl.Id.ParseToGuidWithThrow("task list");
+                tl.TaskCount = await _toDoTaskRepository.CountAsync(t => t.TaskListId == id, cancellationToken);
+            }
 
             return new PagedResult<TaskListDto>(
-                _mapper.Map<IReadOnlyCollection<TaskListDto>>(result.Data),
+                taskListDtos,
                 result.Count,
                 result.CurrentPage,
                 result.TotalPages
             );
         }
 
-        public async Task<TaskListDto?> GetAsync(string taskListId, string userId, bool includeTasks = false, CancellationToken cancellationToken = default)
+        public async Task<TaskListDto?> GetAsync(string taskListId, string userId, CancellationToken cancellationToken = default)
         {
             var taskListGuid = taskListId.ParseToGuidWithThrow("task list");
             var userGuid = userId.ParseToGuidWithThrow("user");
 
-            var includes = new List<Expression<Func<TaskList, object>>>();
-
-            if (includeTasks)
-                includes.Add(tl => tl.Tasks);
-
             var taskList = await _taskListRepository.FindAsync(
                 predicate: tl => tl.Id == taskListGuid,
-                cancellationToken: cancellationToken,
-                includes: [.. includes]
+                cancellationToken: cancellationToken
             ) ?? throw new NotFoundException("task list");
+
+            var taskListDto = _mapper.Map<TaskListDto>(taskList);
+            taskListDto.TaskCount = await _toDoTaskRepository.CountAsync(t => t.TaskListId == taskListGuid, cancellationToken);
 
             return taskList.UserId != userGuid
                 ? throw new ForbiddenException(ExceptionMessages.NoPermission("access", "task list"))
-                : _mapper.Map<TaskListDto>(taskList);
+                : taskListDto;
         }
 
         public async Task UpdateAsync(string taskListId, string userId, UpdateTaskListForm form, CancellationToken cancellationToken = default)

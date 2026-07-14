@@ -1,4 +1,5 @@
 using AutoMapper;
+using LinqKit;
 using PromptlyNote.Core.Constants;
 using PromptlyNote.Core.DTOs;
 using PromptlyNote.Core.DTOs.Forms.Create;
@@ -78,7 +79,8 @@ namespace PromptlyNote.Services.Services
                 TaskListId = taskListGuid,
                 UserId = userGuid,
                 SubTasks = _mapper.Map<List<SubTask>>(form.SubTasks),
-                RemindBeforeMinutes = form.RemindBeforeMinutes
+                RemindBeforeMinutes = form.RemindBeforeMinutes,
+                SyncToGoogleCalendar = form.SyncToGoogleCalendar
             };
 
             if (form.SyncToGoogleCalendar && form.DueDate is null)
@@ -181,7 +183,7 @@ namespace PromptlyNote.Services.Services
             await _taskRepository.DeleteAsync(taskGuid, cancellationToken);
         }
 
-        public async Task<PagedResult<ToDoTaskDto>> ListAsync(string userId, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, ToDoTaskSortBy toDoTaskSortBy = ToDoTaskSortBy.Name, bool includeCategory = false, bool includeTaskList = false, CancellationToken cancellationToken = default)
+        public async Task<PagedResult<ToDoTaskDto>> ListAsync(string userId, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, ToDoTaskSortBy toDoTaskSortBy = ToDoTaskSortBy.Name, bool includeCategory = false, bool includeTaskList = false, string? categoryFilter = null, string? taskListFilter = null, CancellationToken cancellationToken = default)
         {
             var userGuid = userId.ParseToGuidWithThrow("user");
 
@@ -202,8 +204,22 @@ namespace PromptlyNote.Services.Services
                 _ => t => t.Id
             };
 
+            var predicate = PredicateBuilder.New<ToDoTask>(t => t.UserId == userGuid);
+
+            if (categoryFilter != null)
+            {
+                var categoryGuid = categoryFilter.ParseToGuidWithThrow("category");
+                predicate = predicate.And(t => t.CategoryId == categoryGuid);
+            }
+
+            if (taskListFilter != null)
+            {
+                var taskListGuid = taskListFilter.ParseToGuidWithThrow("task list");
+                predicate = predicate.And(t => t.TaskListId == taskListGuid);
+            }
+
             var result = await _taskRepository.ListAsync(
-                predicate: t => t.UserId == userGuid,
+                predicate: predicate,
                 page: page,
                 pageSize: pageSize,
                 orderBy: orderBy,

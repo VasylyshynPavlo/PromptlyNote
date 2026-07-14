@@ -9,6 +9,6 @@ namespace PromptlyNote.Core.DTOs
         public string IconName { get; set; } = string.Empty;
         public bool Default { get; set; } = false;
         public string UserId { get; set; } = string.Empty;
-        public List<ToDoTaskLightDto> Tasks { get; set; } = [];
+        public int TaskCount { get; set; } = 0;
     }
 }

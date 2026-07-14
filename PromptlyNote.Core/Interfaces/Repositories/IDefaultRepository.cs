@@ -15,5 +15,7 @@ namespace PromptlyNote.Core.Interfaces.Repositories
         Task<PagedResult<T2>> ListAsync<T2>(Expression<Func<T, bool>> predicate, Expression<Func<T, T2>> selector, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, Expression<Func<T, object>>? orderBy = null, CancellationToken cancellationToken = default, params Expression<Func<T, object>>[] includes);
         Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);
         Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+        Task<int> CountAsync(Expression<Func<T, bool>> predicate,
+            CancellationToken cancellationToken = default);
     }
 }

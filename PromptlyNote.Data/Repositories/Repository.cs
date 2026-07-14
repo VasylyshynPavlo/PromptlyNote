@@ -118,6 +118,12 @@ namespace PromptlyNote.Data.Repositories
             return Task.CompletedTask;
         }
 
+        public virtual Task<int> CountAsync(Expression<Func<TEntity, bool>> predicate,
+            CancellationToken cancellationToken = default)
+        {
+            return DbSet.CountAsync(predicate, cancellationToken);
+        }
+
         protected virtual IQueryable<TEntity> BuildQuery(
             Expression<Func<TEntity, bool>> predicate,
             Expression<Func<TEntity, object>>? orderBy,

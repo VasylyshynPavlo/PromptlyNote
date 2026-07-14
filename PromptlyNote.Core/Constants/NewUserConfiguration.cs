@@ -7,11 +7,11 @@ namespace PromptlyNote.Core.Constants
     {
         public static ReadOnlyCollection<DefaultTaskListTemplate> DefaultList { get; } = new(
             [
-            new("Personal", "Personal tasks", IconNames.Personal),
-            new("Work", "Work-related tasks", IconNames.Briefcase),
-            new("Ideas", "Ideas and brainstorming", IconNames.Lightbulb),
-            new("Important", "Important tasks", IconNames.Star),
-            new("To-Do", "Tasks to complete", IconNames.CheckCircle)
+            new("Personal", "Personal tasks", "person"),
+            new("Work", "Work-related tasks", "work"),
+            new("Ideas", "Ideas and brainstorming", "lightbulb"),
+            new("Important", "Important tasks", "star"),
+            new("Someday", "Tasks for the future", "watch_later")
             ]
         );
 

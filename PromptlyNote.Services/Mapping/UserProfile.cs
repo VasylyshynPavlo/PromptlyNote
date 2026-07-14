@@ -14,9 +14,6 @@ namespace PromptlyNote.Services.Mapping
 
             CreateMap<UserDto, User>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.Parse(src.Id)));
-
-            CreateMap<User, UserLightDto>()
-                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()));
         }
     }
 }

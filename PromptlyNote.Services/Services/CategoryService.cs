@@ -54,19 +54,14 @@ namespace PromptlyNote.Services.Services
             await _categoryRepository.DeleteAsync(categoryGuid, cancellationToken);
         }
 
-        public async Task<CategoryDto> GetAsync(string categoryId, string userId, bool includeTasks = false, CancellationToken cancellationToken = default)
+        public async Task<CategoryDto> GetAsync(string categoryId, string userId, CancellationToken cancellationToken = default)
         {
             var categoryGuid = categoryId.ParseToGuidWithThrow("category");
             var userGuid = userId.ParseToGuidWithThrow("user");
 
-            var includes = new List<Expression<Func<Category, object>>>();
-            if (includeTasks)
-                includes.Add(c => c.Tasks);
-
             var category = await _categoryRepository.FindAsync(
                 predicate: c => c.Id == categoryGuid,
-                cancellationToken: cancellationToken,
-                includes: [.. includes]
+                cancellationToken: cancellationToken
             ) ?? throw new NotFoundException("category");
 
             return category.UserId != userGuid
@@ -74,15 +69,12 @@ namespace PromptlyNote.Services.Services
                 : _mapper.Map<CategoryDto>(category);
         }
 
-        public async Task<PagedResult<CategoryDto>> ListAsync(string userId, int page, int pageSize, CategorySortBy sortBy = CategorySortBy.Name, bool includeTasks = false, CancellationToken cancellationToken = default)
+        public async Task<PagedResult<CategoryDto>> ListAsync(string userId, int page, int pageSize, CategorySortBy sortBy = CategorySortBy.Name, CancellationToken cancellationToken = default)
         {
             var userGuid = userId.ParseToGuidWithThrow("user");
 
             PaginationHelper.ValidatePageSettings(page, pageSize);
 
-            var includes = new List<Expression<Func<Category, object>>>();
-            if (includeTasks)
-                includes.Add(c => c.Tasks);
 
             Expression<Func<Category, object>> orderBy = sortBy switch
             {
@@ -96,8 +88,7 @@ namespace PromptlyNote.Services.Services
                 page: page,
                 pageSize: pageSize,
                 orderBy: orderBy,
-                cancellationToken: cancellationToken,
-                includes: [.. includes]
+                cancellationToken: cancellationToken
             );
 
             return new PagedResult<CategoryDto>(
