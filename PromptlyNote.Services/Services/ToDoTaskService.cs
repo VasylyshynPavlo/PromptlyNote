@@ -52,7 +52,7 @@ namespace PromptlyNote.Services.Services
                 ) ?? throw new NotFoundException("category");
 
                 if (category.UserId != userGuid)
-                    throw new ForbiddenException(ExceptionMessages.NotOwner("category"));
+                    throw new ArgumentException(ExceptionMessages.NotOwner("category"));
             }
 
             var taskList = await _taskListRepository.FindAsync(
@@ -62,7 +62,7 @@ namespace PromptlyNote.Services.Services
             ) ?? throw new NotFoundException("task list");
 
             if (taskList.UserId != userGuid)
-                throw new ForbiddenException(ExceptionMessages.NotOwner("task list"));
+                throw new ArgumentException(ExceptionMessages.NotOwner("task list"));
 
             var subTasks = _mapper.Map<List<SubTask>>(form.SubTasks);
             for (int i = 0; i < subTasks.Count; i++)
@@ -116,7 +116,7 @@ namespace PromptlyNote.Services.Services
             ) ?? throw new NotFoundException("task");
 
             if (task.UserId != userGuid)
-                throw new ForbiddenException(ExceptionMessages.NotOwner("task"));
+                throw new ArgumentException(ExceptionMessages.NotOwner("task"));
 
             var wasInCalendar = task.SyncToGoogleCalendar && !task.IsCompleted;
             var shouldBeInCalendar = form.SyncToGoogleCalendar && !form.IsCompleted;
@@ -178,12 +178,12 @@ namespace PromptlyNote.Services.Services
             ) ?? throw new NotFoundException("task");
 
             if (task.UserId != userGuid)
-                throw new ForbiddenException(ExceptionMessages.NotOwner("task"));
+                throw new ArgumentException(ExceptionMessages.NotOwner("task"));
 
             await _taskRepository.DeleteAsync(taskGuid, cancellationToken);
         }
 
-        public async Task<PagedResult<ToDoTaskDto>> ListAsync(string userId, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, ToDoTaskSortBy toDoTaskSortBy = ToDoTaskSortBy.Name, bool includeCategory = false, bool includeTaskList = false, string? categoryFilter = null, string? taskListFilter = null, CancellationToken cancellationToken = default)
+        public async Task<PagedResult<ToDoTaskDto>> ListAsync(string userId, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, ToDoTaskSortBy toDoTaskSortBy = ToDoTaskSortBy.Name, bool isDescending = false, bool includeCategory = false, bool includeTaskList = false, string? categoryFilter = null, string? taskListFilter = null, CancellationToken cancellationToken = default)
         {
             var userGuid = userId.ParseToGuidWithThrow("user");
 
@@ -223,6 +223,7 @@ namespace PromptlyNote.Services.Services
                 page: page,
                 pageSize: pageSize,
                 orderBy: orderBy,
+                isDescending: isDescending,
                 cancellationToken: cancellationToken,
                 includes: [.. includes]
             );
@@ -252,7 +253,7 @@ namespace PromptlyNote.Services.Services
             ) ?? throw new NotFoundException("task");
 
             if (task.UserId != userGuid)
-                throw new ForbiddenException(ExceptionMessages.NotOwner("task"));
+                throw new ArgumentException(ExceptionMessages.NotOwner("task"));
 
             task.SubTasks = [.. task.SubTasks.OrderBy(st => st.Order)];
 
@@ -271,7 +272,7 @@ namespace PromptlyNote.Services.Services
             ) ?? throw new NotFoundException("task");
 
             if (task.UserId != userGuid)
-                throw new ForbiddenException(ExceptionMessages.NotOwner("task"));
+                throw new ArgumentException(ExceptionMessages.NotOwner("task"));
 
             var orderedSubTasks = _mapper.Map<List<SubTask>>(subTasks);
             for (int i = 0; i < subTasks.Count; i++)
@@ -294,7 +295,7 @@ namespace PromptlyNote.Services.Services
             ) ?? throw new NotFoundException("task");
 
             if (task.UserId != userGuid)
-                throw new ForbiddenException(ExceptionMessages.NotOwner("task"));
+                throw new ArgumentException(ExceptionMessages.NotOwner("task"));
 
             if (task.DueDate is null)
                 throw new ArgumentException("Task does not have a due date to add to calendar.");
@@ -324,7 +325,7 @@ namespace PromptlyNote.Services.Services
                 cancellationToken: cancellationToken
             ) ?? throw new NotFoundException("task");
             if (task.UserId != userGuid)
-                throw new ForbiddenException(ExceptionMessages.NotOwner("task"));
+                throw new ArgumentException(ExceptionMessages.NotOwner("task"));
 
             task.SyncToGoogleCalendar = false;
             await _unitOfWork.BeginTransactionAsync(cancellationToken);

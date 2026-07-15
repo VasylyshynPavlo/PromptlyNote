@@ -54,5 +54,35 @@ namespace PromptlyNote.Api.Controllers
             await _userService.DeleteAsync(userId, cancellationToken);
             return NoContent();
         }
+
+        [HttpPut("password/change")]
+        public async Task<IActionResult> ChangePassword(string oldPassword, string newPassword, CancellationToken cancellationToken)
+        {
+            var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                      ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (userId is null)
+            {
+                return Unauthorized();
+            }
+
+            await _userService.ChangePasswordAsync(userId, oldPassword, newPassword, cancellationToken);
+            return NoContent();
+        }
+
+        [HttpPut("password/set")]
+        public async Task<IActionResult> SetPassword(string code, string redirectUri, string newPassword, CancellationToken cancellationToken)
+        {
+            var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                      ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (userId is null)
+            {
+                return Unauthorized();
+            }
+
+            await _userService.SetPassword(code, newPassword, redirectUri, cancellationToken);
+            return NoContent();
+        }
     }
 }

@@ -46,7 +46,7 @@ namespace PromptlyNote.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> List(int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, TaskListSortBy sortBy = TaskListSortBy.Name, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> List(int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, TaskListSortBy sortBy = TaskListSortBy.Name, bool isDescending = false, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                       ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -55,7 +55,7 @@ namespace PromptlyNote.Api.Controllers
                 return Unauthorized();
             }
 
-            return Ok(await _taskListService.ListAsync(userId, page, pageSize, sortBy, cancellationToken));
+            return Ok(await _taskListService.ListAsync(userId, page, pageSize, sortBy, isDescending, cancellationToken));
         }
 
         [HttpPut("{id}")]

@@ -102,7 +102,7 @@ namespace PromptlyNote.Services.Services
 
             if (!string.Equals(user.Email, googleEmail, StringComparison.OrdinalIgnoreCase))
             {
-                throw new ForbiddenException("The Google account does not match your account. Connect the calendar of the account you are signed in with.");
+                throw new ArgumentException("The Google account does not match your account. Connect the calendar of the account you are signed in with.");
             }
 
             var encryptedRefreshToken = _tokenProtector.Protect(tokenResponse.RefreshToken);
@@ -126,12 +126,6 @@ namespace PromptlyNote.Services.Services
                 await _connectionRepository.UpdateAsync(existing);
             }
 
-            if (!user.GoogleAuth)
-            {
-                user.GoogleAuth = true;
-                await _userRepository.UpdateAsync(user);
-            }
-
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
@@ -151,12 +145,12 @@ namespace PromptlyNote.Services.Services
             }
             catch (InvalidJwtException ex)
             {
-                throw new ForbiddenException("Invalid Google token.", ex);
+                throw new ArgumentException("Invalid Google token.", ex);
             }
 
             if (!payload.EmailVerified)
             {
-                throw new ForbiddenException("Google email is not verified.");
+                throw new ArgumentException("Google email is not verified.");
             }
 
             return payload.Email;
@@ -252,6 +246,25 @@ namespace PromptlyNote.Services.Services
             });
         }
 
+        public async Task DisconnectAsync(string userId, CancellationToken cancellationToken = default)
+        {
+            var userGuid = userId.ParseToGuidWithThrow("user");
+            var connection = await _connectionRepository.FindAsync(gc => gc.UserId == userGuid, cancellationToken);
+            if (connection is null)
+            {
+                return;
+            }
+            await _connectionRepository.DeleteAsync(connection.Id, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task<bool> IsConnectedAsync(string userId, CancellationToken cancellationToken = default)
+        {
+            var userGuid = userId.ParseToGuidWithThrow("user");
+            var connection = await _connectionRepository.FindAsync(gc => gc.UserId == userGuid, cancellationToken);
+            return connection is not null;
+        }
+
         private Guid ValidateStateAndGetUserId(string state)
         {
             string decoded;
@@ -261,7 +274,7 @@ namespace PromptlyNote.Services.Services
             }
             catch
             {
-                throw new ForbiddenException("Invalid OAuth state.");
+                throw new ArgumentException("Invalid OAuth state.");
             }
 
             var parts = decoded.Split(':');
@@ -269,13 +282,13 @@ namespace PromptlyNote.Services.Services
                 || !Guid.TryParse(parts[0], out var userId)
                 || !long.TryParse(parts[1], out var issuedAtUnix))
             {
-                throw new ForbiddenException("Invalid OAuth state.");
+                throw new ArgumentException("Invalid OAuth state.");
             }
 
             var issuedAt = DateTimeOffset.FromUnixTimeSeconds(issuedAtUnix);
             if (DateTimeOffset.UtcNow - issuedAt > StateLifetime)
             {
-                throw new ForbiddenException("OAuth state has expired.");
+                throw new ArgumentException("OAuth state has expired.");
             }
 
             return userId;

@@ -46,16 +46,16 @@ namespace PromptlyNote.Services.Services
         public async Task<(string accessToken, UserDto userDto)> LoginAsync(LoginForm loginForm, CancellationToken cancellationToken = default)
         {
             var user = await _userRepository.FindAsync(u => u.Email == loginForm.Email, cancellationToken: cancellationToken)
-                ?? throw new ForbiddenException("Invalid credentials.");
+                ?? throw new ArgumentException("Invalid credentials.");
 
             if (user.PasswordHash is null)
             {
-                throw new ForbiddenException("Invalid credentials.");
+                throw new ArgumentException("Invalid credentials.");
             }
 
             if (!PasswordHesher.Verify(loginForm.Password, user.PasswordHash))
             {
-                throw new ForbiddenException("Invalid credentials.");
+                throw new ArgumentException("Invalid credentials.");
             }
 
             return (_jwtService.GenerateAccessToken(user), _mapper.Map<UserDto>(user));
@@ -63,7 +63,6 @@ namespace PromptlyNote.Services.Services
 
         public async Task<(string accessToken, UserDto userDto)> AuthViaGoogleAsync(string code, string redirectUri, CancellationToken cancellationToken = default)
         {
-            Console.WriteLine("Logging in via Google...");
             using var flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
             {
                 ClientSecrets = new ClientSecrets
@@ -93,12 +92,12 @@ namespace PromptlyNote.Services.Services
             }
             catch (InvalidJwtException ex)
             {
-                throw new ForbiddenException("Invalid Google token.", ex);
+                throw new ArgumentException("Invalid Google token.", ex);
             }
 
             if (!payload.EmailVerified)
             {
-                throw new ForbiddenException("Email is not verified.");
+                throw new ArgumentException("Email is not verified.");
             }
 
             var user = await _userRepository.FindAsync(u => u.Email == payload.Email, cancellationToken: cancellationToken);
@@ -106,7 +105,6 @@ namespace PromptlyNote.Services.Services
             {
                 user = await CreateUserWithDefaultAsync(payload.Name, payload.Email, payload.Picture, true, null, cancellationToken);
             }
-            user.GoogleAuth = true;
             await _userRepository.UpdateAsync(user);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -126,7 +124,6 @@ namespace PromptlyNote.Services.Services
                 {
                     FullName = fullName,
                     Email = email,
-                    GoogleAuth = googleAuth,
                     PasswordHash = passwordHash
                 };
                 await _userRepository.AddAsync(newUser, cancellationToken);

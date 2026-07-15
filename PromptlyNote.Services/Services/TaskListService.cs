@@ -31,6 +31,9 @@ namespace PromptlyNote.Services.Services
         {
             var userGuid = userId.ParseToGuidWithThrow("user");
 
+            if (await _taskListRepository.CountAsync(tl => tl.UserId == userGuid, cancellationToken) >= UserCollectionsMaximumCount.TaskLists)
+                throw new LimitExceededException("You have reached the maximum number of task lists allowed.");
+
             TaskList taskList = new()
             {
                 Name = form.Name,
@@ -55,15 +58,15 @@ namespace PromptlyNote.Services.Services
             ) ?? throw new NotFoundException("task list");
 
             if (taskList.UserId != userGuid)
-                throw new ForbiddenException(ExceptionMessages.NoPermission("delete", "task list"));
+                throw new ArgumentException(ExceptionMessages.NoPermission("delete", "task list"));
 
             if (taskList.Default)
-                throw new ForbiddenException(ExceptionMessages.NoPermission("delete", "default task list"));
+                throw new ArgumentException(ExceptionMessages.NoPermission("delete", "default task list"));
 
             await _taskListRepository.DeleteAsync(taskListGuid, cancellationToken);
         }
 
-        public async Task<PagedResult<TaskListDto>> ListAsync(string userId, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, TaskListSortBy taskListSortBy = TaskListSortBy.Name, CancellationToken cancellationToken = default)
+        public async Task<PagedResult<TaskListDto>> ListAsync(string userId, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, TaskListSortBy taskListSortBy = TaskListSortBy.Name, bool isDescending = false, CancellationToken cancellationToken = default)
         {
             var userGuid = userId.ParseToGuidWithThrow("user");
 
@@ -83,6 +86,7 @@ namespace PromptlyNote.Services.Services
                 page: page,
                 pageSize: pageSize,
                 orderBy: orderBy,
+                isDescending: isDescending,
                 cancellationToken: cancellationToken
             );
 
@@ -115,7 +119,7 @@ namespace PromptlyNote.Services.Services
             taskListDto.TaskCount = await _toDoTaskRepository.CountAsync(t => t.TaskListId == taskListGuid, cancellationToken);
 
             return taskList.UserId != userGuid
-                ? throw new ForbiddenException(ExceptionMessages.NoPermission("access", "task list"))
+                ? throw new ArgumentException(ExceptionMessages.NoPermission("access", "task list"))
                 : taskListDto;
         }
 
@@ -131,10 +135,10 @@ namespace PromptlyNote.Services.Services
             ) ?? throw new NotFoundException("task list");
 
             if (taskList.UserId != userGuid)
-                throw new ForbiddenException(ExceptionMessages.NotOwner("task list"));
+                throw new ArgumentException(ExceptionMessages.NotOwner("task list"));
 
             if (taskList.Default)
-                throw new ForbiddenException(ExceptionMessages.NoPermission("update", "default task list"));
+                throw new ArgumentException(ExceptionMessages.NoPermission("update", "default task list"));
 
             taskList.Name = form.Name;
             taskList.Description = form.Description;

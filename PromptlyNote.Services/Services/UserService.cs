@@ -1,4 +1,7 @@
 using AutoMapper;
+using Google.Apis.Auth;
+using Google.Apis.Auth.OAuth2.Flows;
+using Microsoft.Extensions.Configuration;
 using PromptlyNote.Core.Constants;
 using PromptlyNote.Core.DTOs;
 using PromptlyNote.Core.DTOs.Forms.Create;
@@ -19,13 +22,21 @@ namespace PromptlyNote.Services.Services
         ITaskListRepository taskListRepository,
         ICategoryRepository categoryRepository,
         IUnitOfWork unitOfWork,
-        IMapper mapper) : IUserService
+        IMapper mapper,
+        IGoogleCalendarService googleCalendarService,
+        IConfiguration configuration) : IUserService
     {
         private readonly IUserRepository _userRepository = userRepository;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly ICategoryRepository _categoryRepository = categoryRepository;
         private readonly ITaskListRepository _taskListRepository = taskListRepository;
+        private readonly IGoogleCalendarService _googleCalendarService = googleCalendarService;
         private readonly IMapper _mapper = mapper;
+
+        private readonly string _clientId = configuration["Authentication:Google:ClientId"]
+            ?? throw new ArgumentNullException("Google ClientId is not configured.");
+        private readonly string _clientSecret = configuration["Authentication:Google:ClientSecret"]
+            ?? throw new ArgumentNullException("Google ClientSecret is not configured.");
 
         public async Task ChangeFullNameAsync(string fullName, string userId, CancellationToken cancellationToken = default)
         {
@@ -57,7 +68,6 @@ namespace PromptlyNote.Services.Services
                 {
                     FullName = form.FullName,
                     PasswordHash = form.Password is not null ? BCrypt.Net.BCrypt.HashPassword(form.Password) : null,
-                    GoogleAuth = viaGoogle,
                     Email = form.Email
                 };
                 await _userRepository.AddAsync(newUser, cancellationToken);
@@ -111,7 +121,10 @@ namespace PromptlyNote.Services.Services
                 cancellationToken: cancellationToken
             ) ?? throw new NotFoundException("user");
 
-            return _mapper.Map<UserDto>(user);
+            var dto = _mapper.Map<UserDto>(user);
+            dto.GoogleCalendar = await _googleCalendarService.IsConnectedAsync(userId, cancellationToken);
+
+            return dto;
         }
 
         public async Task<UserDto?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
@@ -121,10 +134,13 @@ namespace PromptlyNote.Services.Services
                 cancellationToken: cancellationToken
             ) ?? throw new NotFoundException("user");
 
-            return _mapper.Map<UserDto>(user);
+            var dto = _mapper.Map<UserDto>(user);
+            dto.GoogleCalendar = await _googleCalendarService.IsConnectedAsync(user.Id.ToString(), cancellationToken);
+
+            return dto;
         }
 
-        public async Task<PagedResult<UserDto>> ListAsync(string userId, int page = 0, int pageSize = 10, UserSortBy userSortBy = UserSortBy.FullName, CancellationToken cancellationToken = default)
+        public async Task<PagedResult<UserDto>> ListAsync(string userId, int page = 0, int pageSize = 10, UserSortBy userSortBy = UserSortBy.FullName, bool isDescending = false, CancellationToken cancellationToken = default)
         {
             var userGuid = userId.ParseToGuidWithThrow("user");
 
@@ -143,14 +159,96 @@ namespace PromptlyNote.Services.Services
                 predicate: u => u.Id == userGuid,
                 page: page,
                 pageSize: pageSize,
+                orderBy: orderBy,
+                isDescending: isDescending,
                 cancellationToken: cancellationToken
             );
 
+            var userDtos = _mapper.Map<IReadOnlyCollection<UserDto>>(result.Data);
+            foreach (var userDto in userDtos)
+            {
+                userDto.GoogleCalendar = await _googleCalendarService.IsConnectedAsync(userId, cancellationToken);
+            }
+
             return new PagedResult<UserDto>(
-                _mapper.Map<IReadOnlyCollection<UserDto>>(result.Data),
+                userDtos,
                 result.Count,
                 result.CurrentPage,
                 result.TotalPages);
+        }
+
+        public async Task ChangePasswordAsync(string userId, string oldPassword, string newPassword, CancellationToken cancellationToken = default)
+        {
+            var userGuid = userId.ParseToGuidWithThrow("user");
+
+            var user = await _userRepository.FindAsync(
+                predicate: u => u.Id == userGuid,
+                cancellationToken: cancellationToken
+            ) ?? throw new NotFoundException("user");
+
+            if (user.PasswordHash is null || !BCrypt.Net.BCrypt.Verify(oldPassword, user.PasswordHash))
+            {
+                throw new ArgumentException("Invalid credentials.");
+            }
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            await _userRepository.UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task SetPassword(string code, string newPassword, string redirectUri, CancellationToken cancellationToken = default)
+        {
+            using var flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
+            {
+                ClientSecrets = new Google.Apis.Auth.OAuth2.ClientSecrets
+                {
+                    ClientId = _clientId,
+                    ClientSecret = _clientSecret
+                },
+                Scopes = ["openid", "email"]
+            });
+
+            var tokenResponse = await flow.ExchangeCodeForTokenAsync(
+                userId: "user",
+                code: code,
+                redirectUri: redirectUri,
+                CancellationToken.None
+            );
+
+            var settings = new GoogleJsonWebSignature.ValidationSettings()
+            {
+                Audience = [_clientId]
+            };
+
+            GoogleJsonWebSignature.Payload payload;
+            try
+            {
+                payload = await GoogleJsonWebSignature.ValidateAsync(tokenResponse.IdToken, settings);
+            }
+            catch (InvalidJwtException ex)
+            {
+                throw new ArgumentException("Invalid Google token.", ex);
+            }
+
+            if (!payload.EmailVerified)
+            {
+                throw new ArgumentException("Email is not verified.");
+            }
+
+            var user = await _userRepository.FindAsync(
+                predicate: u => u.Email == payload.Email,
+                cancellationToken: cancellationToken
+            ) ?? throw new NotFoundException("user");
+
+            if (user.PasswordHash is not null)
+            {
+                throw new ConflictException("Password has already been set.");
+            }
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+
+            await _userRepository.UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
     }
 }

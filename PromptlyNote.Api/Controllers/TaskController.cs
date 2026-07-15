@@ -34,7 +34,7 @@ namespace PromptlyNote.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> List(int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, ToDoTaskSortBy toDoTaskSortBy = ToDoTaskSortBy.Name, bool includeCategory = false, bool includeTaskList = false, string? categoryFilter = null, string? taskListFilter = null, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> List(int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, ToDoTaskSortBy toDoTaskSortBy = ToDoTaskSortBy.Name, bool isDescending = false, bool includeCategory = false, bool includeTaskList = false, string? categoryFilter = null, string? taskListFilter = null, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                       ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -43,7 +43,7 @@ namespace PromptlyNote.Api.Controllers
                 return Unauthorized();
             }
 
-            return Ok(await _toDoTaskService.ListAsync(userId, page, pageSize, toDoTaskSortBy, includeCategory, includeTaskList, categoryFilter, taskListFilter, cancellationToken));
+            return Ok(await _toDoTaskService.ListAsync(userId, page, pageSize, toDoTaskSortBy, isDescending, includeCategory, includeTaskList, categoryFilter, taskListFilter, cancellationToken));
         }
 
         [HttpPost]

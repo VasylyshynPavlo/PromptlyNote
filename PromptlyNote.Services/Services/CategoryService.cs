@@ -28,6 +28,9 @@ namespace PromptlyNote.Services.Services
         {
             var userGuid = userId.ParseToGuidWithThrow("user");
 
+            if (await _categoryRepository.CountAsync(c => c.UserId == userGuid, cancellationToken) >= UserCollectionsMaximumCount.Categories)
+                throw new LimitExceededException("You have reached the maximum number of categories allowed.");
+
             Category category = new(form.Name, form.ColorHex, userGuid);
 
             await _categoryRepository.AddAsync(category, cancellationToken);
@@ -46,10 +49,10 @@ namespace PromptlyNote.Services.Services
             ) ?? throw new NotFoundException("category");
 
             if (category.UserId != userGuid)
-                throw new ForbiddenException(ExceptionMessages.NoPermission("delete", "category"));
+                throw new ArgumentException(ExceptionMessages.NoPermission("delete", "category"));
 
             if (category.Default)
-                throw new ForbiddenException(ExceptionMessages.NoPermission("delete", "default category"));
+                throw new ArgumentException(ExceptionMessages.NoPermission("delete", "default category"));
 
             await _categoryRepository.DeleteAsync(categoryGuid, cancellationToken);
         }
@@ -65,11 +68,11 @@ namespace PromptlyNote.Services.Services
             ) ?? throw new NotFoundException("category");
 
             return category.UserId != userGuid
-                ? throw new ForbiddenException(ExceptionMessages.NoPermission("access", "category"))
+                ? throw new ArgumentException(ExceptionMessages.NoPermission("access", "category"))
                 : _mapper.Map<CategoryDto>(category);
         }
 
-        public async Task<PagedResult<CategoryDto>> ListAsync(string userId, int page, int pageSize, CategorySortBy sortBy = CategorySortBy.Name, CancellationToken cancellationToken = default)
+        public async Task<PagedResult<CategoryDto>> ListAsync(string userId, int page, int pageSize, CategorySortBy sortBy = CategorySortBy.Name, bool isDescending = false, CancellationToken cancellationToken = default)
         {
             var userGuid = userId.ParseToGuidWithThrow("user");
 
@@ -88,6 +91,7 @@ namespace PromptlyNote.Services.Services
                 page: page,
                 pageSize: pageSize,
                 orderBy: orderBy,
+                isDescending: isDescending,
                 cancellationToken: cancellationToken
             );
 
@@ -110,10 +114,10 @@ namespace PromptlyNote.Services.Services
             ) ?? throw new NotFoundException("category");
 
             if (category.UserId != userGuid)
-                throw new ForbiddenException(ExceptionMessages.NoPermission("update", "category"));
+                throw new ArgumentException(ExceptionMessages.NoPermission("update", "category"));
 
             if (category.Default)
-                throw new ForbiddenException(ExceptionMessages.NoPermission("update", "default category"));
+                throw new ArgumentException(ExceptionMessages.NoPermission("update", "default category"));
 
             category.Name = form.Name;
             category.ColorHex = form.ColorHex;

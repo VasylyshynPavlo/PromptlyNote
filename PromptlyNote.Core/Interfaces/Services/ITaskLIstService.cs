@@ -11,7 +11,7 @@ namespace PromptlyNote.Core.Interfaces.Services
     {
         Task CreateAsync(CreateTaskListForm form, string userId, CancellationToken cancellationToken = default);
         Task DeleteAsync(string taskListId, string userId, CancellationToken cancellationToken = default);
-        Task<PagedResult<TaskListDto>> ListAsync(string userId, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, TaskListSortBy taskListSortBy = TaskListSortBy.Name, CancellationToken cancellationToken = default);
+        Task<PagedResult<TaskListDto>> ListAsync(string userId, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, TaskListSortBy taskListSortBy = TaskListSortBy.Name, bool isDescending = false, CancellationToken cancellationToken = default);
         Task<TaskListDto?> GetAsync(string taskListId, string userId, CancellationToken cancellationToken = default);
         Task UpdateAsync(string taskListId, string userId, UpdateTaskListForm form, CancellationToken cancellationToken = default);
     }

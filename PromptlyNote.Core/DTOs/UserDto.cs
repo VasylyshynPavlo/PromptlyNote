@@ -6,6 +6,7 @@ namespace PromptlyNote.Core.DTOs
     {
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
-        public bool GoogleAuth { get; set; } = false;
+        public bool GoogleCalendar { get; set; } = false;
+        public bool IsPasswordSet { get; init; } = false;
     }
 }

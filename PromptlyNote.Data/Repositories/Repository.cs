@@ -35,7 +35,7 @@ namespace PromptlyNote.Data.Repositories
             CancellationToken cancellationToken = default,
             params Expression<Func<TEntity, object>>[] includes)
         {
-            return await BuildQuery(predicate, null, includes)
+            return await BuildQuery(predicate, null, false, includes)
                 .FirstOrDefaultAsync(cancellationToken);
         }
 
@@ -45,7 +45,7 @@ namespace PromptlyNote.Data.Repositories
             CancellationToken cancellationToken = default,
             params Expression<Func<TEntity, object>>[] includes)
         {
-            return await BuildQuery(predicate, null, includes)
+            return await BuildQuery(predicate, null, false, includes)
                 .Select(selector)
                 .FirstOrDefaultAsync(cancellationToken);
         }
@@ -62,10 +62,11 @@ namespace PromptlyNote.Data.Repositories
             int page = PaginationConfiguration.MinimumPage,
             int pageSize = PaginationConfiguration.DefaultPageSize,
             Expression<Func<TEntity, object>>? orderBy = null,
+            bool isDescending = false,
             CancellationToken cancellationToken = default,
             params Expression<Func<TEntity, object>>[] includes)
         {
-            var query = BuildQuery(predicate, orderBy, includes);
+            var query = BuildQuery(predicate, orderBy, isDescending, includes);
 
             var count = await query.CountAsync(cancellationToken);
 
@@ -89,10 +90,11 @@ namespace PromptlyNote.Data.Repositories
             int page = PaginationConfiguration.MinimumPage,
             int pageSize = PaginationConfiguration.DefaultPageSize,
             Expression<Func<TEntity, object>>? orderBy = null,
+            bool isDescending = false,
             CancellationToken cancellationToken = default,
             params Expression<Func<TEntity, object>>[] includes)
         {
-            var query = BuildQuery(predicate, orderBy, includes);
+            var query = BuildQuery(predicate, orderBy, isDescending, includes);
 
             var count = await query.CountAsync();
 
@@ -127,6 +129,7 @@ namespace PromptlyNote.Data.Repositories
         protected virtual IQueryable<TEntity> BuildQuery(
             Expression<Func<TEntity, bool>> predicate,
             Expression<Func<TEntity, object>>? orderBy,
+            bool isDescending = false,
             params Expression<Func<TEntity, object>>[] includes)
         {
             IQueryable<TEntity> query = DbSet
@@ -145,7 +148,9 @@ namespace PromptlyNote.Data.Repositories
 
             return orderBy is null
                 ? query
-                : query.OrderBy(orderBy);
+                : isDescending
+                    ? query.OrderByDescending(orderBy)
+                    : query.OrderBy(orderBy);
         }
     }
 }

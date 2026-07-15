@@ -11,5 +11,7 @@ namespace PromptlyNote.Core.Interfaces.Services
         Task<string> CreateEventAsync(string userId, ToDoTaskLightDto dto, CancellationToken cancellationToken = default);
 
         Task DeleteEventAsync(string userId, string taskId, CancellationToken cancellationToken = default);
+        Task DisconnectAsync(string userId, CancellationToken cancellationToken = default);
+        Task<bool> IsConnectedAsync(string userId, CancellationToken cancellationToken = default);
     }
 }
