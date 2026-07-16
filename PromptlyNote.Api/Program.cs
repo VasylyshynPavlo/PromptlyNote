@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PromptlyNote.Api.Middlewares;
@@ -48,6 +49,13 @@ builder.Services.AddCors(options =>
     options.AddPolicy("FrontendPolicy", policy =>
     {
         policy.WithOrigins("http://localhost:4200")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+    options.AddPolicy("ProductionFrontendPolicy", policy =>
+    {
+        policy.WithOrigins("https://promptlynote.pashhun.pp.ua")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -113,6 +121,11 @@ builder.Services.AddValidation();
 
 var app = builder.Build();
 
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -134,9 +147,9 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference();
+    app.UseHttpsRedirection();
 }
 
-app.UseHttpsRedirection();
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseCors("FrontendPolicy");
 app.UseAuthentication();

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PromptlyNote.Core.DTOs.Forms.Update;
 using PromptlyNote.Core.Interfaces.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -56,7 +57,7 @@ namespace PromptlyNote.Api.Controllers
         }
 
         [HttpPut("password/change")]
-        public async Task<IActionResult> ChangePassword(string oldPassword, string newPassword, CancellationToken cancellationToken)
+        public async Task<IActionResult> ChangePassword(ChangePasswordForm changePasswordForm, CancellationToken cancellationToken)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                       ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -66,12 +67,12 @@ namespace PromptlyNote.Api.Controllers
                 return Unauthorized();
             }
 
-            await _userService.ChangePasswordAsync(userId, oldPassword, newPassword, cancellationToken);
+            await _userService.ChangePasswordAsync(userId, changePasswordForm.CurrentPassword, changePasswordForm.NewPassword, cancellationToken);
             return NoContent();
         }
 
         [HttpPut("password/set")]
-        public async Task<IActionResult> SetPassword(string code, string redirectUri, string newPassword, CancellationToken cancellationToken)
+        public async Task<IActionResult> SetPassword(string redirectUri, SetPasswordForm setPasswordForm, CancellationToken cancellationToken)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                       ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -81,7 +82,7 @@ namespace PromptlyNote.Api.Controllers
                 return Unauthorized();
             }
 
-            await _userService.SetPassword(code, newPassword, redirectUri, cancellationToken);
+            await _userService.SetPassword(setPasswordForm.Code, setPasswordForm.NewPassword, redirectUri, cancellationToken);
             return NoContent();
         }
     }

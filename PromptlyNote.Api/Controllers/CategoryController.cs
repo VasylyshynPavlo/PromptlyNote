@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using PromptlyNote.Core.Constants;
 using PromptlyNote.Core.DTOs.Forms.Create;
+using PromptlyNote.Core.DTOs.Forms.Update;
 using PromptlyNote.Core.Enums;
 using PromptlyNote.Core.Interfaces.Services;
 using System.IdentityModel.Tokens.Jwt;
@@ -68,6 +69,20 @@ namespace PromptlyNote.Api.Controllers
             }
 
             await _categoryService.DeleteAsync(id, userId, cancellationToken);
+            return NoContent();
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(string id, [FromForm] UpdateCategoryForm form, CancellationToken cancellationToken = default)
+        {
+            var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                      ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId is null)
+            {
+                return Unauthorized();
+            }
+
+            await _categoryService.UpdateAsync(id, userId, form, cancellationToken);
             return NoContent();
         }
 
