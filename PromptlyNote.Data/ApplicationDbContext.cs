@@ -30,6 +30,13 @@ namespace PromptlyNote.Data
                 entity.Property(u => u.FullName)
                     .IsRequired()
                     .HasMaxLength(255);
+
+                entity.Property(u => u.GoogleSub)
+                    .HasMaxLength(255);
+
+                entity.HasIndex(u => u.GoogleSub)
+                    .IsUnique()
+                    .HasFilter("[GoogleSub] IS NOT NULL");
             });
 
             // Category

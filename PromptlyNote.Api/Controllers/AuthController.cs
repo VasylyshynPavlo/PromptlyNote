@@ -29,7 +29,7 @@ namespace PromptlyNote.Api.Controllers
         }
 
         [HttpPost("login/google")]
-        public async Task<IActionResult> LoginViaGoogle([FromForm] GoogleAuthForm form, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> LoginViaGoogle([FromForm] GoogleForm form, CancellationToken cancellationToken = default)
         {
             var (accessToken, userLightDto) = await _authService.AuthViaGoogleAsync(form.Code, form.RedirectUri, cancellationToken);
             SetAuthCookies(accessToken);

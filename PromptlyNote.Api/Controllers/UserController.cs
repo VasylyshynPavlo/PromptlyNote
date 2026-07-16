@@ -72,7 +72,7 @@ namespace PromptlyNote.Api.Controllers
         }
 
         [HttpPut("password/set")]
-        public async Task<IActionResult> SetPassword(string redirectUri, SetPasswordForm setPasswordForm, CancellationToken cancellationToken)
+        public async Task<IActionResult> SetPassword(SetPasswordForm setPasswordForm, CancellationToken cancellationToken)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                       ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -82,7 +82,7 @@ namespace PromptlyNote.Api.Controllers
                 return Unauthorized();
             }
 
-            await _userService.SetPassword(setPasswordForm.Code, setPasswordForm.NewPassword, redirectUri, cancellationToken);
+            await _userService.SetPassword(setPasswordForm.Code, setPasswordForm.NewPassword, setPasswordForm.RedirectUri, cancellationToken);
             return NoContent();
         }
     }

@@ -8,7 +8,6 @@ using Google.Apis.Calendar.v3;
 using Google.Apis.Calendar.v3.Data;
 using Google.Apis.Services;
 using Google.Apis.Util;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Configuration;
 using PromptlyNote.Core.DTOs.LightDTOs;
 using PromptlyNote.Core.Entities;
@@ -22,57 +21,28 @@ namespace PromptlyNote.Services.Services
 {
     public class GoogleCalendarService(
         IConfiguration configuration,
-        IDataProtectionProvider dataProtectionProvider,
         IGoogleTokenProtector tokenProtector,
         IGoogleCalendarConnectionRepository connectionRepository,
         IUserRepository userRepository,
         IUnitOfWork unitOfWork) : IGoogleCalendarService
     {
-        private static readonly string CalendarScope = CalendarService.Scope.CalendarEvents;
-
         private static readonly string[] ConnectScopes =
-            ["openid", "email", "profile", CalendarService.Scope.CalendarEvents];
+            ["openid", "email", CalendarService.Scope.CalendarEvents];
         private static readonly string ConnectScopeString = string.Join(' ', ConnectScopes);
-
-        private static readonly TimeSpan StateLifetime = TimeSpan.FromMinutes(10);
 
         private readonly string _clientId = configuration["Authentication:Google:ClientId"]
             ?? throw new ArgumentNullException("Google ClientId is not configured.");
         private readonly string _clientSecret = configuration["Authentication:Google:ClientSecret"]
             ?? throw new ArgumentNullException("Google ClientSecret is not configured.");
-        private readonly string _calendarRedirectUri = configuration["Authentication:Google:CalendarRedirectUri"]
-            ?? throw new ArgumentNullException("Google CalendarRedirectUri is not configured.");
-
-        private readonly IDataProtector _stateProtector =
-            dataProtectionProvider.CreateProtector("PromptlyNote.GoogleCalendar.State");
 
         private readonly IGoogleTokenProtector _tokenProtector = tokenProtector;
         private readonly IGoogleCalendarConnectionRepository _connectionRepository = connectionRepository;
         private readonly IUserRepository _userRepository = userRepository;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
-        public string BuildConnectUrl(string userId)
+        public async Task ConnectAsync(string userId, string code, string redirectUri, CancellationToken cancellationToken = default)
         {
-            var state = _stateProtector.Protect($"{userId}:{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}");
-
-            var request = new GoogleAuthorizationCodeRequestUrl(
-                new Uri("https://accounts.google.com/o/oauth2/v2/auth"))
-            {
-                ClientId = _clientId,
-                RedirectUri = _calendarRedirectUri,
-                Scope = ConnectScopeString,
-                AccessType = "offline",
-                Prompt = "consent",
-                ResponseType = "code",
-                State = state
-            };
-
-            return request.Build().ToString();
-        }
-
-        public async Task HandleConnectCallbackAsync(string code, string state, CancellationToken cancellationToken = default)
-        {
-            var userId = ValidateStateAndGetUserId(state);
+            var userGuid = userId.ParseToGuidWithThrow("user");
 
             using var flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
             {
@@ -85,9 +55,9 @@ namespace PromptlyNote.Services.Services
             });
 
             var tokenResponse = await flow.ExchangeCodeForTokenAsync(
-                userId: userId.ToString(),
+                userId: userId,
                 code: code,
-                redirectUri: _calendarRedirectUri,
+                redirectUri: redirectUri,
                 cancellationToken);
 
             if (string.IsNullOrEmpty(tokenResponse.RefreshToken))
@@ -95,26 +65,51 @@ namespace PromptlyNote.Services.Services
                 throw new InternalException("Google did not return a refresh token.");
             }
 
-            var googleEmail = await GetVerifiedGoogleEmailAsync(tokenResponse.IdToken);
+            GoogleJsonWebSignature.Payload payload;
+            try
+            {
+                payload = await GoogleJsonWebSignature.ValidateAsync(
+                    tokenResponse.IdToken,
+                    new GoogleJsonWebSignature.ValidationSettings { Audience = [_clientId] });
+            }
+            catch (InvalidJwtException ex)
+            {
+                throw new ArgumentException("Invalid Google token.", ex);
+            }
 
-            var user = await _userRepository.FindAsync(u => u.Id == userId, cancellationToken)
+            if (!payload.EmailVerified)
+            {
+                throw new ArgumentException("The Google account email is not verified.");
+            }
+
+            var user = await _userRepository.FindAsync(u => u.Id == userGuid, cancellationToken)
                 ?? throw new NotFoundException("user");
 
-            if (!string.Equals(user.Email, googleEmail, StringComparison.OrdinalIgnoreCase))
+            if (user.GoogleSub is null)
             {
-                throw new ArgumentException("The Google account does not match your account. Connect the calendar of the account you are signed in with.");
+                if (await _userRepository.ExistsAsync(u => u.GoogleSub == payload.Subject, cancellationToken))
+                {
+                    throw new ConflictException("This Google account is already linked to another account.");
+                }
+
+                user.GoogleSub = payload.Subject;
+                await _userRepository.UpdateAsync(user);
+            }
+            else if (user.GoogleSub != payload.Subject)
+            {
+                throw new ArgumentException("Connect the calendar of the Google account you signed in with.");
             }
 
             var encryptedRefreshToken = _tokenProtector.Protect(tokenResponse.RefreshToken);
 
             var existing = await _connectionRepository.FindAsync(
-                gc => gc.UserId == userId, cancellationToken);
+                gc => gc.UserId == userGuid, cancellationToken);
 
             if (existing is null)
             {
                 await _connectionRepository.AddAsync(new GoogleCalendarConnection
                 {
-                    UserId = userId,
+                    UserId = userGuid,
                     EncryptedRefreshToken = encryptedRefreshToken,
                     Scopes = ConnectScopeString
                 }, cancellationToken);
@@ -127,33 +122,6 @@ namespace PromptlyNote.Services.Services
             }
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
-        }
-
-        private async Task<string> GetVerifiedGoogleEmailAsync(string? idToken)
-        {
-            if (string.IsNullOrEmpty(idToken))
-            {
-                throw new InternalException("Google did not return an id token.");
-            }
-
-            GoogleJsonWebSignature.Payload payload;
-            try
-            {
-                payload = await GoogleJsonWebSignature.ValidateAsync(
-                    idToken,
-                    new GoogleJsonWebSignature.ValidationSettings { Audience = [_clientId] });
-            }
-            catch (InvalidJwtException ex)
-            {
-                throw new ArgumentException("Invalid Google token.", ex);
-            }
-
-            if (!payload.EmailVerified)
-            {
-                throw new ArgumentException("Google email is not verified.");
-            }
-
-            return payload.Email;
         }
 
         public async Task<string> CreateEventAsync(string userId, ToDoTaskLightDto dto, CancellationToken cancellationToken = default)
@@ -235,7 +203,7 @@ namespace PromptlyNote.Services.Services
             var flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
             {
                 ClientSecrets = new ClientSecrets { ClientId = _clientId, ClientSecret = _clientSecret },
-                Scopes = [CalendarScope]
+                Scopes = [CalendarService.Scope.CalendarEvents]
             });
             var credential = new UserCredential(flow, userGuid.ToString(), new TokenResponse { RefreshToken = refreshToken });
 
@@ -263,35 +231,6 @@ namespace PromptlyNote.Services.Services
             var userGuid = userId.ParseToGuidWithThrow("user");
             var connection = await _connectionRepository.FindAsync(gc => gc.UserId == userGuid, cancellationToken);
             return connection is not null;
-        }
-
-        private Guid ValidateStateAndGetUserId(string state)
-        {
-            string decoded;
-            try
-            {
-                decoded = _stateProtector.Unprotect(state);
-            }
-            catch
-            {
-                throw new ArgumentException("Invalid OAuth state.");
-            }
-
-            var parts = decoded.Split(':');
-            if (parts.Length != 2
-                || !Guid.TryParse(parts[0], out var userId)
-                || !long.TryParse(parts[1], out var issuedAtUnix))
-            {
-                throw new ArgumentException("Invalid OAuth state.");
-            }
-
-            var issuedAt = DateTimeOffset.FromUnixTimeSeconds(issuedAtUnix);
-            if (DateTimeOffset.UtcNow - issuedAt > StateLifetime)
-            {
-                throw new ArgumentException("OAuth state has expired.");
-            }
-
-            return userId;
         }
     }
 }

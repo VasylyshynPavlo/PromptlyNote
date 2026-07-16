@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PromptlyNote.Core.DTOs.Forms.Auth
 {
-    public class GoogleAuthForm
+    public class GoogleForm
     {
         [Required(ErrorMessage = "Code is required.")]
         public string Code { get; set; } = string.Empty;

@@ -39,7 +39,7 @@ namespace PromptlyNote.Services.Services
 
         public async Task<(string accessToken, UserDto userDto)> RegisterAsync(RegisterForm registerForm, CancellationToken cancellationToken = default)
         {
-            var user = await CreateUserWithDefaultAsync(registerForm.FullName, registerForm.Email, null, false, PasswordHesher.HashPassword(registerForm.Password), cancellationToken);
+            var user = await CreateUserWithDefaultAsync(registerForm.FullName, registerForm.Email, null, PasswordHesher.HashPassword(registerForm.Password), cancellationToken);
             return (_jwtService.GenerateAccessToken(user), _mapper.Map<UserDto>(user));
         }
 
@@ -100,18 +100,27 @@ namespace PromptlyNote.Services.Services
                 throw new ArgumentException("Email is not verified.");
             }
 
-            var user = await _userRepository.FindAsync(u => u.Email == payload.Email, cancellationToken: cancellationToken);
+            var user = await _userRepository.FindAsync(u => u.GoogleSub == payload.Subject, cancellationToken: cancellationToken);
             if (user is null)
             {
-                user = await CreateUserWithDefaultAsync(payload.Name, payload.Email, payload.Picture, true, null, cancellationToken);
+                var existingByEmail = await _userRepository.FindAsync(u => u.Email == payload.Email, cancellationToken: cancellationToken);
+                if (existingByEmail is not null)
+                {
+                    existingByEmail.GoogleSub = payload.Subject;
+                    await _userRepository.UpdateAsync(existingByEmail);
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
+                    user = existingByEmail;
+                }
+                else
+                {
+                    user = await CreateUserWithDefaultAsync(payload.Name, payload.Email, payload.Subject, null, cancellationToken);
+                }
             }
-            await _userRepository.UpdateAsync(user);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return (_jwtService.GenerateAccessToken(user), _mapper.Map<UserDto>(user));
         }
 
-        private async Task<User> CreateUserWithDefaultAsync(string fullName, string email, string? avatarUrl, bool googleAuth, string? passwordHash, CancellationToken cancellationToken)
+        private async Task<User> CreateUserWithDefaultAsync(string fullName, string email, string? googleSub, string? passwordHash, CancellationToken cancellationToken)
         {
             if (await _userRepository.ExistsAsync(u => u.Email == email, cancellationToken: cancellationToken))
             {
@@ -124,7 +133,8 @@ namespace PromptlyNote.Services.Services
                 {
                     FullName = fullName,
                     Email = email,
-                    PasswordHash = passwordHash
+                    PasswordHash = passwordHash,
+                    GoogleSub = googleSub
                 };
                 await _userRepository.AddAsync(newUser, cancellationToken);
                 List<TaskList> defaultTaskLists = [.. NewUserConfiguration.DefaultList

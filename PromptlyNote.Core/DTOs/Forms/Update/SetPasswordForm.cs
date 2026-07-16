@@ -13,5 +13,9 @@ namespace PromptlyNote.Core.DTOs.Forms.Update
 
         [Required(ErrorMessage = "Code is required.")]
         public string Code { get; set; } = null!;
+
+        [Required(ErrorMessage = "Redirect URI is required.")]
+        [Url(ErrorMessage = "Redirect URI is invalid.")]
+        public string RedirectUri { get; set; } = null!;
     }
 }
