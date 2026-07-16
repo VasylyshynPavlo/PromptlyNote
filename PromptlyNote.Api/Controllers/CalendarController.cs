@@ -15,7 +15,7 @@ namespace PromptlyNote.Api.Controllers
     {
         private readonly IGoogleCalendarService _googleCalendarService = googleCalendarService;
 
-        [HttpPut("connect")]
+        [HttpPost("connect")]
         public async Task<IActionResult> ConnectAsync([FromForm] GoogleForm googleAuthForm, CancellationToken cancellationToken = default)
         {
             var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value

@@ -126,7 +126,6 @@ namespace PromptlyNote.Services.Services
         public async Task UpdateAsync(string taskListId, string userId, UpdateTaskListForm form, CancellationToken cancellationToken = default)
         {
             var taskListGuid = taskListId.ParseToGuidWithThrow("task list");
-            Console.WriteLine($"Updating task list: {taskListGuid}");
             var userGuid = userId.ParseToGuidWithThrow("user");
 
             var taskList = await _taskListRepository.FindAsync(

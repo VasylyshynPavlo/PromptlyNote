@@ -1,5 +1,4 @@
-﻿using Google.Apis.Json;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PromptlyNote.Core.Constants;
 using PromptlyNote.Core.DTOs.Forms.Create;
@@ -8,7 +7,6 @@ using PromptlyNote.Core.Enums;
 using PromptlyNote.Core.Interfaces.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text.Json;
 
 namespace PromptlyNote.Api.Controllers
 {
@@ -56,7 +54,6 @@ namespace PromptlyNote.Api.Controllers
                 return Unauthorized();
             }
 
-            Console.WriteLine($"Form: {JsonSerializer.Serialize(form)}");
 
             await _toDoTaskService.CreateAsync(form, userId, cancellationToken);
             return Created();

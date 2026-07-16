@@ -13,7 +13,10 @@ namespace PromptlyNote.Services.Mapping
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))
                 .ForMember(
                     dest => dest.IsPasswordSet,
-                    opt => opt.MapFrom(src => !string.IsNullOrEmpty(src.PasswordHash)));
+                    opt => opt.MapFrom(src => !string.IsNullOrEmpty(src.PasswordHash)))
+                .ForMember(
+                    dest => dest.IsGoogleLinked,
+                    opt => opt.MapFrom(src => src.GoogleSub != null));
 
             CreateMap<UserDto, User>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.Parse(src.Id)));
