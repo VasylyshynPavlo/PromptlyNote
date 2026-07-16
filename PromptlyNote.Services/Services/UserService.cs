@@ -109,6 +109,8 @@ namespace PromptlyNote.Services.Services
             if (!await _userRepository.ExistsAsync(u => u.Id == userGuid, cancellationToken))
                 throw new NotFoundException("user");
 
+            await _googleCalendarService.DisconnectAsync(userId, cancellationToken);
+
             await _userRepository.DeleteAsync(userGuid, cancellationToken);
         }
 

@@ -28,20 +28,6 @@ namespace PromptlyNote.Api.Controllers
             return user is null ? throw new KeyNotFoundException("User not found") : (IActionResult)Ok(user);
         }
 
-        [HttpPut]
-        public async Task<IActionResult> UpdateFullName(string fullName, CancellationToken cancellationToken = default)
-        {
-            var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-                      ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId is null)
-            {
-                return Unauthorized();
-            }
-
-            await _userService.ChangeFullNameAsync(fullName, userId, cancellationToken);
-            return NoContent();
-        }
-
         [HttpDelete]
         public async Task<IActionResult> DeleteMe(CancellationToken cancellationToken = default)
         {
