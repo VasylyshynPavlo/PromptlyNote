@@ -154,7 +154,7 @@ namespace PromptlyNote.Services.Services
                 UserSortBy.Email => u => u.Email,
                 UserSortBy.CreatedAt => u => u.CreatedAt,
                 UserSortBy.UpdatedAt => u => u.UpdatedAt,
-                _ => throw new ArgumentOutOfRangeException(nameof(userSortBy), userSortBy, "Invalid sort option.")
+                _ => throw new ArgumentException("Invalid sort option."),
             };
 
             var result = await _userRepository.ListAsync(
@@ -229,12 +229,12 @@ namespace PromptlyNote.Services.Services
             }
             catch (InvalidJwtException ex)
             {
-                throw new ArgumentException("Invalid Google token.", ex);
+                throw new ForbiddenException("Invalid Google token.", ex);
             }
 
             if (!payload.EmailVerified)
             {
-                throw new ArgumentException("Email is not verified.");
+                throw new ForbiddenException("Email is not verified.");
             }
 
             var user = await _userRepository.FindAsync(

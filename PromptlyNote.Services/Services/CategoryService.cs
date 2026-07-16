@@ -49,10 +49,10 @@ namespace PromptlyNote.Services.Services
             ) ?? throw new NotFoundException("category");
 
             if (category.UserId != userGuid)
-                throw new ArgumentException(ExceptionMessages.NoPermission("delete", "category"));
+                throw new ForbiddenException(ExceptionMessages.NoPermission("delete", "category"));
 
             if (category.Default)
-                throw new ArgumentException(ExceptionMessages.NoPermission("delete", "default category"));
+                throw new ForbiddenException(ExceptionMessages.NoPermission("delete", "default category"));
 
             await _categoryRepository.DeleteAsync(categoryGuid, cancellationToken);
         }
@@ -68,7 +68,7 @@ namespace PromptlyNote.Services.Services
             ) ?? throw new NotFoundException("category");
 
             return category.UserId != userGuid
-                ? throw new ArgumentException(ExceptionMessages.NoPermission("access", "category"))
+                ? throw new ForbiddenException(ExceptionMessages.NoPermission("access", "category"))
                 : _mapper.Map<CategoryDto>(category);
         }
 
@@ -130,10 +130,10 @@ namespace PromptlyNote.Services.Services
             ) ?? throw new NotFoundException("category");
 
             if (category.UserId != userGuid)
-                throw new ArgumentException(ExceptionMessages.NoPermission("update", "category"));
+                throw new ForbiddenException(ExceptionMessages.NoPermission("update", "category"));
 
             if (category.Default)
-                throw new ArgumentException(ExceptionMessages.NoPermission("update", "default category"));
+                throw new ForbiddenException(ExceptionMessages.NoPermission("update", "default category"));
 
             category.Name = form.Name;
             category.ColorHex = form.ColorHex;

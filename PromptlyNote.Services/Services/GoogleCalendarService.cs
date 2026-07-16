@@ -74,12 +74,12 @@ namespace PromptlyNote.Services.Services
             }
             catch (InvalidJwtException ex)
             {
-                throw new ArgumentException("Invalid Google token.", ex);
+                throw new ForbiddenException("Invalid Google token.", ex);
             }
 
             if (!payload.EmailVerified)
             {
-                throw new ArgumentException("The Google account email is not verified.");
+                throw new ForbiddenException("The Google account email is not verified.");
             }
 
             var user = await _userRepository.FindAsync(u => u.Id == userGuid, cancellationToken)
@@ -97,7 +97,7 @@ namespace PromptlyNote.Services.Services
             }
             else if (user.GoogleSub != payload.Subject)
             {
-                throw new ArgumentException("Connect the calendar of the Google account you signed in with.");
+                throw new ForbiddenException("Connect the calendar of the Google account you signed in with.");
             }
 
             var encryptedRefreshToken = _tokenProtector.Protect(tokenResponse.RefreshToken);

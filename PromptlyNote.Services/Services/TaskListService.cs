@@ -58,10 +58,10 @@ namespace PromptlyNote.Services.Services
             ) ?? throw new NotFoundException("task list");
 
             if (taskList.UserId != userGuid)
-                throw new ArgumentException(ExceptionMessages.NoPermission("delete", "task list"));
+                throw new ForbiddenException(ExceptionMessages.NoPermission("delete", "task list"));
 
             if (taskList.Default)
-                throw new ArgumentException(ExceptionMessages.NoPermission("delete", "default task list"));
+                throw new ForbiddenException(ExceptionMessages.NoPermission("delete", "default task list"));
 
             await _taskListRepository.DeleteAsync(taskListGuid, cancellationToken);
         }
@@ -119,7 +119,7 @@ namespace PromptlyNote.Services.Services
             taskListDto.TaskCount = await _toDoTaskRepository.CountAsync(t => t.TaskListId == taskListGuid, cancellationToken);
 
             return taskList.UserId != userGuid
-                ? throw new ArgumentException(ExceptionMessages.NoPermission("access", "task list"))
+                ? throw new ForbiddenException(ExceptionMessages.NoPermission("access", "task list"))
                 : taskListDto;
         }
 
@@ -135,10 +135,10 @@ namespace PromptlyNote.Services.Services
             ) ?? throw new NotFoundException("task list");
 
             if (taskList.UserId != userGuid)
-                throw new ArgumentException(ExceptionMessages.NotOwner("task list"));
+                throw new ForbiddenException(ExceptionMessages.NotOwner("task list"));
 
             if (taskList.Default)
-                throw new ArgumentException(ExceptionMessages.NoPermission("update", "default task list"));
+                throw new ForbiddenException(ExceptionMessages.NoPermission("update", "default task list"));
 
             taskList.Name = form.Name;
             taskList.Description = form.Description;

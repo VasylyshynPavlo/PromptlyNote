@@ -46,16 +46,16 @@ namespace PromptlyNote.Services.Services
         public async Task<(string accessToken, UserDto userDto)> LoginAsync(LoginForm loginForm, CancellationToken cancellationToken = default)
         {
             var user = await _userRepository.FindAsync(u => u.Email == loginForm.Email, cancellationToken: cancellationToken)
-                ?? throw new ArgumentException("Invalid credentials.");
+                ?? throw new ForbiddenException("Invalid credentials.");
 
             if (user.PasswordHash is null)
             {
-                throw new ArgumentException("Invalid credentials.");
+                throw new ForbiddenException("Invalid credentials.");
             }
 
             if (!PasswordHesher.Verify(loginForm.Password, user.PasswordHash))
             {
-                throw new ArgumentException("Invalid credentials.");
+                throw new ForbiddenException("Invalid credentials.");
             }
 
             return (_jwtService.GenerateAccessToken(user), _mapper.Map<UserDto>(user));
@@ -92,12 +92,12 @@ namespace PromptlyNote.Services.Services
             }
             catch (InvalidJwtException ex)
             {
-                throw new ArgumentException("Invalid Google token.", ex);
+                throw new ForbiddenException("Invalid Google token.", ex);
             }
 
             if (!payload.EmailVerified)
             {
-                throw new ArgumentException("Email is not verified.");
+                throw new ForbiddenException("Email is not verified.");
             }
 
             var user = await _userRepository.FindAsync(u => u.GoogleSub == payload.Subject, cancellationToken: cancellationToken);
