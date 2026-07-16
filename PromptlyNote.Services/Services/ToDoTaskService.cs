@@ -341,5 +341,16 @@ namespace PromptlyNote.Services.Services
                 throw new InternalException("An error occurred while removing the task from the calendar.", ex);
             }
         }
+
+        public async Task<PagedResult<ToDoTaskDto>> SearchAsync(string term, string userId, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, CancellationToken cancellationToken = default)
+        {
+            var userGuid = userId.ParseToGuidWithThrow("user");
+            var toDoTasks = await _taskRepository.SearchAsync(userGuid, term, page, pageSize, cancellationToken);
+            return new PagedResult<ToDoTaskDto>(
+                _mapper.Map<IReadOnlyCollection<ToDoTaskDto>>(toDoTasks.Data),
+                toDoTasks.Count,
+                toDoTasks.CurrentPage,
+                toDoTasks.TotalPages);
+        }
     }
 }

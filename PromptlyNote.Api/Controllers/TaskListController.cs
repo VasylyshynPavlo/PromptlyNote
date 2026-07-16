@@ -5,6 +5,7 @@ using PromptlyNote.Core.DTOs.Forms.Create;
 using PromptlyNote.Core.DTOs.Forms.Update;
 using PromptlyNote.Core.Enums;
 using PromptlyNote.Core.Interfaces.Services;
+using PromptlyNote.Services.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
@@ -84,6 +85,18 @@ namespace PromptlyNote.Api.Controllers
 
             await _taskListService.DeleteAsync(id, userId, cancellationToken);
             return NoContent();
+        }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> Search(string term, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, CancellationToken cancellationToken = default)
+        {
+            var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                      ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId is null)
+            {
+                return Unauthorized();
+            }
+            return Ok(await _taskListService.SearchAsync(term, userId, page, pageSize, cancellationToken));
         }
     }
 }

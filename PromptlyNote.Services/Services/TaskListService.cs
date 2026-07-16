@@ -148,5 +148,16 @@ namespace PromptlyNote.Services.Services
             await _taskListRepository.UpdateAsync(taskList);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
+
+        public async Task<PagedResult<TaskListDto>> SearchAsync(string term, string userId, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, CancellationToken cancellationToken = default)
+        {
+            var userGuid = userId.ParseToGuidWithThrow("user");
+
+            PaginationHelper.ValidatePageSettings(page, pageSize);
+
+            var taskLists = await _taskListRepository.SearchAsync(userGuid, term, page, pageSize, cancellationToken);
+
+            return new PagedResult<TaskListDto>(_mapper.Map<IReadOnlyCollection<TaskListDto>>(taskLists.Data), taskLists.Count, taskLists.CurrentPage, taskLists.TotalPages);
+        }
     }
 }

@@ -14,5 +14,6 @@ namespace PromptlyNote.Core.Interfaces.Services
         Task DeleteAsync(string id, string userId, CancellationToken cancellationToken = default);
         Task<PagedResult<CategoryDto>> ListAsync(string userId, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, CategorySortBy sortBy = CategorySortBy.Name, bool isDescending = false, CancellationToken cancellationToken = default);
         Task<CategoryDto> GetAsync(string id, string userId, CancellationToken cancellationToken = default);
+        Task<PagedResult<CategoryDto>> SearchAsync(string term, string userId, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, CancellationToken cancellationToken = default);
     }
 }

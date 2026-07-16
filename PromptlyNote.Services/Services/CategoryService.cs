@@ -103,6 +103,22 @@ namespace PromptlyNote.Services.Services
             );
         }
 
+        public async Task<PagedResult<CategoryDto>> SearchAsync(string term, string userId, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, CancellationToken cancellationToken = default)
+        {
+            var userGuid = userId.ParseToGuidWithThrow("user");
+
+            PaginationHelper.ValidatePageSettings(page, pageSize);
+
+            var categories = await _categoryRepository.SearchAsync(userGuid, term, page, pageSize, cancellationToken);
+
+            return new PagedResult<CategoryDto>(
+                _mapper.Map<IReadOnlyCollection<CategoryDto>>(categories.Data),
+                categories.Count,
+                categories.CurrentPage,
+                categories.TotalPages
+            );
+        }
+
         public async Task UpdateAsync(string categoryId, string userId, UpdateCategoryForm form, CancellationToken cancellationToken = default)
         {
             var categoryGuid = categoryId.ParseToGuidWithThrow("category");
