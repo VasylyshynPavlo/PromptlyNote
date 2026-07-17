@@ -1,4 +1,5 @@
 ﻿using PromptlyNote.Core.Constants;
+using PromptlyNote.Core.Exceptions;
 using System.Runtime.CompilerServices;
 
 namespace PromptlyNote.Core.Utils
@@ -15,14 +16,12 @@ namespace PromptlyNote.Core.Utils
 
         public static Guid ParseToGuidWithThrow(
         this string value,
-        string entityName,
-        [CallerArgumentExpression(nameof(value))] string paramName = "")
+        string entityName)
         {
             if (!Guid.TryParse(value, out var parsedGuid))
             {
-                throw new ArgumentException(
-                    ExceptionMessages.InvalidIdFormat(entityName),
-                    paramName);
+                throw new BadRequestException(
+                    ExceptionMessages.InvalidIdFormat(entityName));
             }
 
             return parsedGuid;

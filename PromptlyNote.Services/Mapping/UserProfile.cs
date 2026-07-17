@@ -2,6 +2,7 @@
 using PromptlyNote.Core.DTOs;
 using PromptlyNote.Core.DTOs.LightDTOs;
 using PromptlyNote.Core.Entities;
+using PromptlyNote.Core.Utils;
 
 namespace PromptlyNote.Services.Mapping
 {
@@ -19,7 +20,7 @@ namespace PromptlyNote.Services.Mapping
                     opt => opt.MapFrom(src => src.GoogleSub != null));
 
             CreateMap<UserDto, User>()
-                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.Parse(src.Id)));
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ParseToGuidWithThrow("user")));
         }
     }
 }

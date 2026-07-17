@@ -2,6 +2,7 @@
 using PromptlyNote.Core.DTOs;
 using PromptlyNote.Core.DTOs.LightDTOs;
 using PromptlyNote.Core.Entities;
+using PromptlyNote.Core.Utils;
 
 namespace PromptlyNote.Services.Mapping
 {
@@ -14,8 +15,8 @@ namespace PromptlyNote.Services.Mapping
                 .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.UserId.ToString()));
 
             CreateMap<CategoryDto, Category>()
-                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.Parse(src.Id)))
-                .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => Guid.Parse(src.UserId)));
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ParseToGuidWithThrow("category")))
+                .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.UserId.ParseToGuidWithThrow("user")));
         }
     }
 }

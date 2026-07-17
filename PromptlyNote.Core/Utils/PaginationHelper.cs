@@ -1,4 +1,5 @@
 ﻿using PromptlyNote.Core.Constants;
+using PromptlyNote.Core.Exceptions;
 
 namespace PromptlyNote.Core.Utils
 {
@@ -16,17 +17,17 @@ namespace PromptlyNote.Core.Utils
         {
             if (page < PaginationConfiguration.MinimumPage)
             {
-                throw new ArgumentException("Invalid page number.", nameof(page));
+                throw new BadRequestException("Invalid page number.");
             }
 
             if (pageSize < 1)
             {
-                throw new ArgumentException($"Page size must be greater than {PaginationConfiguration.MinimumPage}.", nameof(pageSize));
+                throw new BadRequestException($"Page size must be greater than {PaginationConfiguration.MinimumPage}.");
             }
 
             if (page > PaginationConfiguration.MaxPageSize)
             {
-                throw new ArgumentException($"Page size must be less than or equal to {PaginationConfiguration.MaxPageSize}.", nameof(pageSize));
+                throw new BadRequestException($"Page size must be less than or equal to {PaginationConfiguration.MaxPageSize}.");
             }
         }
     }

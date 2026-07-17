@@ -84,7 +84,7 @@ namespace PromptlyNote.Services.Services
             };
 
             if (form.SyncToGoogleCalendar && form.DueDate is null)
-                throw new ArgumentException("Task does not have a due date to sync to Google Calendar.");
+                throw new BadRequestException("Task does not have a due date to sync to Google Calendar.");
 
             await _unitOfWork.BeginTransactionAsync(cancellationToken);
             try
@@ -122,7 +122,7 @@ namespace PromptlyNote.Services.Services
             var shouldBeInCalendar = form.SyncToGoogleCalendar && !form.IsCompleted;
 
             if (shouldBeInCalendar && form.DueDate is null)
-                throw new ArgumentException("Task does not have a due date to sync to Google Calendar.");
+                throw new BadRequestException("Task does not have a due date to sync to Google Calendar.");
 
             var subTasks = _mapper.Map<List<SubTask>>(form.SubTasks);
             for (int i = 0; i < subTasks.Count; i++)
@@ -253,7 +253,7 @@ namespace PromptlyNote.Services.Services
             ) ?? throw new NotFoundException("task");
 
             if (task.UserId != userGuid)
-                throw new ArgumentException(ExceptionMessages.NotOwner("task"));
+                throw new BadRequestException(ExceptionMessages.NotOwner("task"));
 
             task.SubTasks = [.. task.SubTasks.OrderBy(st => st.Order)];
 
@@ -298,7 +298,7 @@ namespace PromptlyNote.Services.Services
                 throw new ForbiddenException(ExceptionMessages.NotOwner("task"));
 
             if (task.DueDate is null)
-                throw new ArgumentException("Task does not have a due date to add to calendar.");
+                throw new BadRequestException("Task does not have a due date to add to calendar.");
 
             task.SyncToGoogleCalendar = true;
             await _unitOfWork.BeginTransactionAsync(cancellationToken);

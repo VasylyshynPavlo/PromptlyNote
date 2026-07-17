@@ -130,7 +130,7 @@ namespace PromptlyNote.Services.Services
 
             if (dto.DueDate is null)
             {
-                throw new ArgumentException("Due date is required to create a Google Calendar event.");
+                throw new BadRequestException("Due date is required to create a Google Calendar event.");
             }
 
             var googleEvent = new Event

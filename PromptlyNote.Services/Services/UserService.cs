@@ -59,7 +59,7 @@ namespace PromptlyNote.Services.Services
                 throw new ConflictException(ExceptionMessages.ConflictFieldsName("user", "email"));
 
             if (form.Password is not null && viaGoogle)
-                throw new ArgumentException("Password should not be provided when registering via Google.", nameof(form));
+                throw new BadRequestException("Password should not be provided when registering via Google.");
 
             await _unitOfWork.BeginTransactionAsync(cancellationToken);
             try
@@ -154,7 +154,7 @@ namespace PromptlyNote.Services.Services
                 UserSortBy.Email => u => u.Email,
                 UserSortBy.CreatedAt => u => u.CreatedAt,
                 UserSortBy.UpdatedAt => u => u.UpdatedAt,
-                _ => throw new ArgumentException("Invalid sort option."),
+                _ => throw new BadRequestException("Invalid sort option."),
             };
 
             var result = await _userRepository.ListAsync(
@@ -190,7 +190,7 @@ namespace PromptlyNote.Services.Services
 
             if (user.PasswordHash is null || !BCrypt.Net.BCrypt.Verify(oldPassword, user.PasswordHash))
             {
-                throw new ArgumentException("Invalid credentials.");
+                throw new BadRequestException("Invalid credentials.");
             }
 
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);

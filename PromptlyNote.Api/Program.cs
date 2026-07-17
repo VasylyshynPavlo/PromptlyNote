@@ -11,7 +11,9 @@ using PromptlyNote.Data.Repositories;
 using PromptlyNote.Services.Mapping;
 using PromptlyNote.Services.Services;
 using Scalar.AspNetCore;
+using System.Data.Entity;
 using System.Text;
+using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -111,7 +113,8 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddMaps(typeof(SubTaskProfile).Assembly);
 });
 
-builder.Services.AddDataProtection();
+builder.Services.AddDataProtection()
+    .PersistKeysToDbContext<ApplicationDbContext>();
 
 builder.Services.AddAuthorization();
 
@@ -152,7 +155,15 @@ if (app.Environment.IsDevelopment())
 
 app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<ExceptionMiddleware>();
-app.UseCors("FrontendPolicy");
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors("FrontendPolicy");
+
+}
+else
+{
+    app.UseCors("ProductionFrontendPolicy");
+}
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

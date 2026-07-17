@@ -46,9 +46,6 @@ public class ExceptionMiddleware
             _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred.")
         };
 
-        // 5xx — наші баги, повний стек на рівні Error.
-        // 4xx від власних ApiException (NotFound/Forbidden/Conflict) — нормальний потік, не логуємо.
-        // 4xx від "чужого" винятку (напр. ArgumentException) — несподіванка, лишаємо слід на Warning.
         if (statusCode >= StatusCodes.Status500InternalServerError)
             logger.LogError(exception, "Unhandled exception. TraceId: {TraceId}", context.TraceIdentifier);
         else if (exception is not ApiException)

@@ -11,6 +11,7 @@ using PromptlyNote.Core.Interfaces.Repositories;
 using PromptlyNote.Core.Interfaces.Services;
 using PromptlyNote.Core.Models;
 using PromptlyNote.Core.Utils;
+using System.ComponentModel.DataAnnotations;
 using System.Linq.Expressions;
 
 namespace PromptlyNote.Services.Services
@@ -106,6 +107,9 @@ namespace PromptlyNote.Services.Services
         public async Task<PagedResult<CategoryDto>> SearchAsync(string term, string userId, int page = PaginationConfiguration.MinimumPage, int pageSize = PaginationConfiguration.DefaultPageSize, CancellationToken cancellationToken = default)
         {
             var userGuid = userId.ParseToGuidWithThrow("user");
+
+            if (term.Length < 3)
+                throw new BadRequestException("Search term must be at least 3 characters long.");
 
             PaginationHelper.ValidatePageSettings(page, pageSize);
 
